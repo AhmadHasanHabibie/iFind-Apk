@@ -17,6 +17,54 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
 
+    <!-- Subtle Animated Toast Notification -->
+    @if (session('success'))
+        <div id="toast-notification" 
+             class="fixed top-6 right-4 sm:right-6 z-[100] max-w-sm w-[calc(100%-2rem)] bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-3.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] flex items-center justify-between gap-3 transform -translate-y-6 opacity-0 transition-all duration-300 ease-out">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-slate-800 leading-tight">Berhasil</p>
+                    <p class="text-xs text-slate-500 truncate mt-0.5">{{ session('success') }}</p>
+                </div>
+            </div>
+            <button type="button" id="close-toast-btn" aria-label="Tutup Notifikasi" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const toast = document.getElementById('toast-notification');
+                const closeBtn = document.getElementById('close-toast-btn');
+                if (!toast) return;
+
+                // Animate in smoothly
+                setTimeout(() => {
+                    toast.classList.remove('-translate-y-6', 'opacity-0');
+                    toast.classList.add('translate-y-0', 'opacity-100');
+                }, 50);
+
+                function dismiss() {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('-translate-y-6', 'opacity-0');
+                    setTimeout(() => {
+                        if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+                    }, 350);
+                }
+
+                if (closeBtn) closeBtn.addEventListener('click', dismiss);
+                setTimeout(dismiss, 3500); // Auto dismiss after 3.5 seconds
+            });
+        </script>
+    @endif
+
     <!-- NAVBAR -->
     <header class="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-slate-100 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -32,12 +80,32 @@
                 <a href="#keunggulan" class="hover:text-blue-600 transition">Keunggulan LBS</a>
             </nav>
 
-            <div class="flex items-center space-x-4">
-                <a href="#" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Masuk</a>
-                <a href="#" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-0.5">
-                    Mulai Jelajah
-                </a>
-            </div>
+            @auth
+                <div class="flex items-center space-x-3">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-sm font-bold text-slate-800 leading-tight">{{ Auth::user()->name }}</p>
+                        <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full {{ Auth::user()->role === 'admin' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
+                            {{ ucfirst(Auth::user()->role) }}
+                        </span>
+                    </div>
+                    <a href="{{ route('dashboard') }}" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-blue-600/20 transition-all">
+                        Buka Dashboard
+                    </a>
+                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all">
+                            Keluar
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div class="flex items-center space-x-4">
+                    <a href="{{ route('login') }}" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Masuk</a>
+                    <a href="{{ route('register') }}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-0.5">
+                        Mulai Jelajah
+                    </a>
+                </div>
+            @endauth
         </div>
     </header>
 
