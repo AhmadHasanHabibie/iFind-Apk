@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
-use App\Models\ChatMessage;
+use App\Models\Booking;
 use App\Models\Conversation;
 use App\Models\User;
+use App\Services\ChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,18 +14,25 @@ use Illuminate\View\View;
 
 class ChatController extends Controller
 {
+    public function __construct(
+        protected ChatService $chatService
+    ) {}
+
     public function index(Request $request): View
     {
         $user = $request->user();
         $store = $user->store;
         $tab = $request->input('tab', 'customer'); // 'customer' or 'admin'
 
-        $customerConversations = Conversation::where('store_id', $store->id)
-            ->with(['userOne', 'userTwo', 'messages' => fn($q) => $q->latest()->take(1)])
-            ->orderByDesc('last_message_at')
-            ->get();
+        $customerConversations = $store
+            ? Conversation::where('type', 'user_staff')
+                ->where('store_id', $store->id)
+                ->with(['userOne', 'userTwo', 'messages' => fn($q) => $q->latest()->take(1)])
+                ->orderByDesc('last_message_at')
+                ->get()
+            : collect();
 
-        $adminConversations = Conversation::whereNull('store_id')
+        $adminConversations = Conversation::where('type', 'staff_admin')
             ->where(function ($query) use ($user) {
                 $query->where('user_one_id', $user->id)
                     ->orWhere('user_two_id', $user->id);
@@ -39,7 +47,6 @@ class ChatController extends Controller
             'adminConversations' => $adminConversations,
             'activeConversation' => null,
             'messages' => collect(),
-            'formattedMessages' => [],
         ]);
     }
 
@@ -48,40 +55,36 @@ class ChatController extends Controller
         $user = $request->user();
         $store = $user->store;
 
-        // Validasi akses percakapan
-        $isParticipant = ($conversation->user_one_id === $user->id || $conversation->user_two_id === $user->id);
-        $isStoreOwner = ($conversation->store_id === $store->id);
-        abort_if(! $isParticipant && ! $isStoreOwner, 403, 'Akses percakapan ditolak.');
+        // Validasi partisipan & kesesuaian role
+        abort_unless($conversation->isParticipant($user->id), 403, 'Akses percakapan ditolak.');
 
-        $tab = $conversation->store_id ? 'customer' : 'admin';
+        if ($conversation->type === 'user_staff') {
+            abort_unless(in_array($user->role, ['user', 'staff']), 403, 'Role tidak diizinkan.');
+            abort_unless($store && $conversation->store_id === $store->id, 403, 'Bukan percakapan toko Anda.');
+            $tab = 'customer';
+        } elseif ($conversation->type === 'staff_admin') {
+            abort_unless(in_array($user->role, ['staff', 'admin']), 403, 'Role tidak diizinkan.');
+            $tab = 'admin';
+        } else {
+            abort(403, 'Tipe percakapan tidak valid.');
+        }
 
-        // Tandai pesan dari lawan bicara sebagai telah dibaca
-        $conversation->messages()
-            ->where('sender_id', '!=', $user->id)
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
+        // Tandai pesan sebagai dibaca
+        $this->chatService->markAsRead($conversation, $user);
 
         $messages = $conversation->messages()
-            ->with('sender')
             ->orderBy('id', 'asc')
             ->get();
 
-        $formattedMessages = $messages->map(function ($m) use ($user) {
-            return [
-                'id' => $m->id,
-                'message' => $m->message,
-                'sender_id' => $m->sender_id,
-                'is_me' => $m->sender_id === $user->id,
-                'time' => $m->created_at->format('H:i'),
-            ];
-        })->values();
+        $customerConversations = $store
+            ? Conversation::where('type', 'user_staff')
+                ->where('store_id', $store->id)
+                ->with(['userOne', 'userTwo', 'messages' => fn($q) => $q->latest()->take(1)])
+                ->orderByDesc('last_message_at')
+                ->get()
+            : collect();
 
-        $customerConversations = Conversation::where('store_id', $store->id)
-            ->with(['userOne', 'userTwo', 'messages' => fn($q) => $q->latest()->take(1)])
-            ->orderByDesc('last_message_at')
-            ->get();
-
-        $adminConversations = Conversation::whereNull('store_id')
+        $adminConversations = Conversation::where('type', 'staff_admin')
             ->where(function ($query) use ($user) {
                 $query->where('user_one_id', $user->id)
                     ->orWhere('user_two_id', $user->id);
@@ -96,7 +99,6 @@ class ChatController extends Controller
             'adminConversations' => $adminConversations,
             'activeConversation' => $conversation,
             'messages' => $messages,
-            'formattedMessages' => $formattedMessages,
         ]);
     }
 
@@ -105,24 +107,22 @@ class ChatController extends Controller
         $user = $request->user();
         $store = $user->store;
 
-        $isParticipant = ($conversation->user_one_id === $user->id || $conversation->user_two_id === $user->id);
-        $isStoreOwner = ($conversation->store_id === $store->id);
-        abort_if(! $isParticipant && ! $isStoreOwner, 403, 'Akses ditolak.');
+        abort_unless($conversation->isParticipant($user->id), 403, 'Akses percakapan ditolak.');
+
+        if ($conversation->type === 'user_staff') {
+            abort_unless(in_array($user->role, ['user', 'staff']), 403);
+            abort_unless($store && $conversation->store_id === $store->id, 403);
+        } elseif ($conversation->type === 'staff_admin') {
+            abort_unless(in_array($user->role, ['staff', 'admin']), 403);
+        } else {
+            abort(403);
+        }
 
         $request->validate([
             'message' => ['required', 'string', 'max:2000'],
         ]);
 
-        $message = ChatMessage::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $user->id,
-            'message' => $request->message,
-            'is_read' => false,
-        ]);
-
-        $conversation->update([
-            'last_message_at' => now(),
-        ]);
+        $message = $this->chatService->send($conversation, $user, $request->input('message'));
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -132,7 +132,7 @@ class ChatController extends Controller
                     'message' => $message->message,
                     'sender_id' => $message->sender_id,
                     'is_me' => true,
-                    'time' => $message->created_at->format('H:i'),
+                    'time' => $message->created_at ? $message->created_at->format('H:i') : '',
                 ],
             ]);
         }
@@ -145,33 +145,29 @@ class ChatController extends Controller
         $user = $request->user();
         $store = $user->store;
 
-        $isParticipant = ($conversation->user_one_id === $user->id || $conversation->user_two_id === $user->id);
-        $isStoreOwner = ($conversation->store_id === $store->id);
-        abort_if(! $isParticipant && ! $isStoreOwner, 403, 'Akses ditolak.');
+        abort_unless($conversation->isParticipant($user->id), 403, 'Akses percakapan ditolak.');
 
-        $lastId = (int) $request->input('last_id', 0);
+        if ($conversation->type === 'user_staff') {
+            abort_unless(in_array($user->role, ['user', 'staff']), 403);
+            abort_unless($store && $conversation->store_id === $store->id, 403);
+        } elseif ($conversation->type === 'staff_admin') {
+            abort_unless(in_array($user->role, ['staff', 'admin']), 403);
+        } else {
+            abort(403);
+        }
 
-        $newMessages = $conversation->messages()
-            ->where('id', '>', $lastId)
-            ->with('sender')
-            ->orderBy('id', 'asc')
-            ->get();
+        $lastId = (int) ($request->input('after_id') ?? $request->input('last_id', 0));
 
-        // Tandai pesan dari lawan bicara yang baru diambil sebagai read
-        $conversation->messages()
-            ->where('id', '>', $lastId)
-            ->where('sender_id', '!=', $user->id)
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
+        $this->chatService->markAsRead($conversation, $user);
+        $newMessages = $this->chatService->newMessagesSince($conversation, $lastId);
 
         $formatted = $newMessages->map(function ($msg) use ($user) {
             return [
                 'id' => $msg->id,
                 'message' => $msg->message,
                 'sender_id' => $msg->sender_id,
-                'sender_name' => $msg->sender->name ?? 'Pengguna',
                 'is_me' => $msg->sender_id === $user->id,
-                'time' => $msg->created_at->format('H:i'),
+                'time' => $msg->created_at ? $msg->created_at->format('H:i') : '',
             ];
         });
 
@@ -181,38 +177,46 @@ class ChatController extends Controller
     }
 
     /**
-     * Hubungi Admin via Chat
-     * Catatan asumsi: 1 percakapan staf-admin = 2 partisipan tetap.
-     * Jika nanti ada banyak admin, staf diarahkan ke akun admin dengan ID paling awal.
+     * Staf memulai chat ke Customer yang pernah memiliki minimal 1 booking di tokonya.
+     */
+    public function startUserChat(Request $request, User $user): RedirectResponse
+    {
+        $staff = $request->user();
+        $store = $staff->store;
+
+        abort_unless($store, 403, 'Anda belum memiliki profil toko.');
+        abort_unless($user->role === 'user', 404, 'Pelanggan tidak ditemukan.');
+
+        // Batasan keamanan: Staf hanya boleh chat ke User yang pernah memiliki minimal 1 booking
+        abort_unless(
+            Booking::where('store_id', $store->id)->where('user_id', $user->id)->exists(),
+            403,
+            'Anda hanya bisa menghubungi pelanggan yang pernah booking di toko Anda.'
+        );
+
+        $conversation = $this->chatService->findOrCreateUserStaff($user, $store);
+
+        return redirect()->route('staff.chat.show', [
+            'conversation' => $conversation->id,
+            'tab' => 'customer',
+        ]);
+    }
+
+    /**
+     * Hubungi Admin via Chat (staff_admin)
      */
     public function contactAdmin(Request $request): RedirectResponse
     {
         $user = $request->user();
 
-        // Cari admin pertama di sistem
         $admin = User::where('role', 'admin')->orderBy('id', 'asc')->first();
         abort_if(! $admin, 404, 'Akun admin tidak ditemukan di sistem.');
 
-        // Cek apakah sudah pernah ada percakapan langsung staf & admin
-        $conversation = Conversation::whereNull('store_id')
-            ->where(function ($q) use ($user, $admin) {
-                $q->where(function ($sub) use ($user, $admin) {
-                    $sub->where('user_one_id', $user->id)->where('user_two_id', $admin->id);
-                })->orWhere(function ($sub) use ($user, $admin) {
-                    $sub->where('user_one_id', $admin->id)->where('user_two_id', $user->id);
-                });
-            })
-            ->first();
+        $conversation = $this->chatService->findOrCreateStaffAdmin($user, $admin);
 
-        if (! $conversation) {
-            $conversation = Conversation::create([
-                'user_one_id' => $user->id,
-                'user_two_id' => $admin->id,
-                'store_id' => null,
-                'last_message_at' => now(),
-            ]);
-        }
-
-        return redirect()->route('staff.chat.show', ['conversation' => $conversation->id, 'tab' => 'admin']);
+        return redirect()->route('staff.chat.show', [
+            'conversation' => $conversation->id,
+            'tab' => 'admin',
+        ]);
     }
 }

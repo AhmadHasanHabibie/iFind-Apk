@@ -84,8 +84,23 @@
 
                             <!-- Pelanggan -->
                             <td class="py-4 px-6">
-                                <p class="font-bold text-slate-800">{{ $booking->user->name ?? 'User' }}</p>
-                                <p class="text-xs text-slate-400">{{ $booking->user->phone ?: $booking->user->email }}</p>
+                                <div class="flex items-center justify-between gap-2">
+                                    <div>
+                                        <p class="font-bold text-slate-800">{{ $booking->user->name ?? 'User' }}</p>
+                                        <p class="text-xs text-slate-400">{{ $booking->user->phone ?: $booking->user->email }}</p>
+                                    </div>
+                                    @if($booking->user)
+                                        <form method="POST" action="{{ route('staff.chat.start-user', $booking->user) }}">
+                                            @csrf
+                                            <button type="submit"
+                                                    title="Chat Customer"
+                                                    class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition shadow-2xs inline-flex items-center space-x-1 shrink-0">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                                <span>Chat Customer</span>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
 
                             <!-- Jadwal -->

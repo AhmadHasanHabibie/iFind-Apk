@@ -77,4 +77,18 @@ class Store extends Model
     {
         return $this->slots()->whereDate('date', today())->orderBy('start_time')->get();
     }
+
+    public function scopeVisible($query)
+    {
+        return $query->where('status', 'approved')->where('is_active', true);
+    }
+
+    public function getPrimaryPhotoUrlAttribute(): string
+    {
+        $primary = $this->photos()->where('is_primary', true)->first() ?? $this->photos()->first();
+        if ($primary && $primary->photo_path) {
+            return asset('storage/' . $primary->photo_path);
+        }
+        return '';
+    }
 }

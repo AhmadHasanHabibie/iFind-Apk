@@ -65,12 +65,10 @@
             <!-- Brand Logo -->
             <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800">
                 <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-black text-lg text-white shadow-md shadow-blue-500/30">i</div>
                     <div>
-                        <span class="text-xl font-extrabold tracking-tight text-white">i<span class="text-blue-400">Find</span></span>
-                        <span class="ml-1.5 px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase bg-blue-900/80 text-blue-300 rounded border border-blue-700/50">Staf</span>
+                        <span class="text-xl font-black tracking-tight text-white">i-Find</span>
+                        <span class="ml-1.5 px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase bg-blue-500/20 text-blue-300 rounded-md border border-blue-500/40">STAFF</span>
                     </div>
                 </div>
                 <button @click="sidebarOpen = false" class="text-slate-400 hover:text-white lg:hidden">

@@ -58,6 +58,15 @@
                         <span class="text-[10px] font-bold px-1.5 py-0.2 rounded {{ $ticket->sender_role === 'staff' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' }}">
                             {{ $ticket->sender_role === 'staff' ? 'Staf Toko' : 'Customer (User)' }}
                         </span>
+                        @if(($ticket->sender_role === 'staff' || ($ticket->user && $ticket->user->role === 'staff')) && $ticket->user)
+                            <form method="POST" action="{{ route('admin.chat.start', $ticket->user) }}" class="inline">
+                                @csrf
+                                <button type="submit" class="inline-flex items-center px-2.5 py-1 text-[11px] font-bold rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 border border-teal-200 transition shadow-2xs space-x-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                    <span>Chat Staf Ini</span>
+                                </button>
+                            </form>
+                        @endif
                     </div>
                     <p class="text-xs text-slate-400">{{ $ticket->user->email ?? '-' }}</p>
                 </div>

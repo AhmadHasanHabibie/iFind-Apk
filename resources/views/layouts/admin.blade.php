@@ -44,12 +44,10 @@
             <!-- Brand Logo -->
             <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800">
                 <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-black text-lg text-white shadow-md shadow-blue-500/30">i</div>
                     <div>
-                        <span class="text-xl font-extrabold tracking-tight text-white">i<span class="text-teal-400">Find</span></span>
-                        <span class="ml-1.5 px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase bg-teal-900/80 text-teal-300 rounded border border-teal-700/50">Admin</span>
+                        <span class="text-xl font-black tracking-tight text-white">i-Find</span>
+                        <span class="ml-1.5 px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase bg-blue-500/20 text-blue-300 rounded-md border border-blue-500/40">ADMIN</span>
                     </div>
                 </div>
                 <button @click="sidebarOpen = false" class="text-slate-400 hover:text-white lg:hidden">
@@ -61,6 +59,11 @@
             @php
                 $pendingStaffCount = \App\Models\User::pendingStaff()->count();
                 $openTicketsCount = \App\Models\Ticket::where('status', 'open')->count();
+                $adminUnreadChatCount = \App\Models\ChatMessage::whereHas('conversation', function ($q) {
+                    $q->where('type', 'staff_admin')->where(function ($sub) {
+                        $sub->where('user_one_id', Auth::id())->orWhere('user_two_id', Auth::id());
+                    });
+                })->where('sender_id', '!=', Auth::id())->where('is_read', false)->count();
             @endphp
             <div class="flex-1 overflow-y-auto px-4 py-6 space-y-1.5">
                 <div class="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Navigasi Utama</div>
@@ -104,6 +107,18 @@
                     </div>
                     @if($openTicketsCount > 0)
                         <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-rose-500 text-white shadow-sm">{{ $openTicketsCount }}</span>
+                    @endif
+                </a>
+
+                <!-- Chat Staf -->
+                <a href="{{ route('admin.chat.index') }}"
+                   class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.chat.*') ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        <span>Chat Staf</span>
+                    </div>
+                    @if($adminUnreadChatCount > 0)
+                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-teal-500 text-white shadow-sm animate-pulse">{{ $adminUnreadChatCount }}</span>
                     @endif
                 </a>
             </div>

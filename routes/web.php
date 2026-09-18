@@ -18,7 +18,16 @@ Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
-    return view('welcome');
+
+    $stores = \App\Models\Store::where('is_active', true)
+        ->where('status', 'approved')
+        ->with(['photos', 'category', 'slots'])
+        ->withCount('reviews')
+        ->latest()
+        ->take(9)
+        ->get();
+
+    return view('welcome', compact('stores'));
 })->name('home');
 
 // Role-based dashboard redirect helper

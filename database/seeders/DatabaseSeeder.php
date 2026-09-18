@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
             SlotDummySeeder::class,
             BookingDummySeeder::class,
             ConversationDummySeeder::class,
+            AdditionalStaffAndStoreSeeder::class,
+            AdditionalSlotSeeder::class,
+            ReviewDummySeeder::class,
         ]);
     }
 }

@@ -23,4 +23,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
     Route::post('/tickets/{ticket}/reply', [TicketController::class, 'reply'])->name('tickets.reply');
     Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
+
+    // Chat Staf
+    Route::get('/chat', [\App\Http\Controllers\Admin\ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/{conversation}', [\App\Http\Controllers\Admin\ChatController::class, 'show'])->name('chat.show');
+    Route::post('/chat/{conversation}/send', [\App\Http\Controllers\Admin\ChatController::class, 'send'])->name('chat.send');
+    Route::get('/chat/{conversation}/poll', [\App\Http\Controllers\Admin\ChatController::class, 'poll'])->name('chat.poll');
+    Route::post('/chat/start/{staff}', [\App\Http\Controllers\Admin\ChatController::class, 'start'])->name('chat.start');
 });

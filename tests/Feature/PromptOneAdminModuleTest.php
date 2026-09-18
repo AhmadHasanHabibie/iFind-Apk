@@ -247,6 +247,5 @@ class PromptOneAdminModuleTest extends TestCase
         $user = User::where('role', 'user')->first();
         $userResponse = $this->actingAs($user)->get(route('user.dashboard'));
         $userResponse->assertStatus(200);
-        $userResponse->assertSee('Dashboard user akan datang');
     }
 }

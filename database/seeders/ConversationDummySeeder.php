@@ -29,6 +29,7 @@ class ConversationDummySeeder extends Seeder
                 'store_id' => $store->id,
             ],
             [
+                'type' => 'user_staff',
                 'last_message_at' => now()->subMinutes(15),
             ]
         );
@@ -75,6 +76,7 @@ class ConversationDummySeeder extends Seeder
                 'store_id' => null,
             ],
             [
+                'type' => 'staff_admin',
                 'last_message_at' => now()->subHours(2),
             ]
         );

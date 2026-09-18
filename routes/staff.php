@@ -34,5 +34,6 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
         Route::post('/chat/{conversation}/send', [ChatController::class, 'send'])->name('chat.send');
         Route::get('/chat/{conversation}/poll', [ChatController::class, 'poll'])->name('chat.poll'); // AJAX polling, return JSON
         Route::post('/chat/contact-admin', [ChatController::class, 'contactAdmin'])->name('chat.contact-admin');
+        Route::match(['get', 'post'], '/chat/start-user/{user}', [ChatController::class, 'startUserChat'])->name('chat.start-user');
     });
 });

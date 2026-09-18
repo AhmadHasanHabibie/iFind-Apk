@@ -1,85 +1,112 @@
 <x-guest-layout>
-    <div class="mb-4 text-center">
-        <h2 class="text-2xl font-bold text-gray-800">Buat Akun iFind</h2>
-        <p class="text-sm text-gray-600 mt-1">Temukan dan booking ruang belajar atau kafe terbaik</p>
+    <div class="text-center space-y-1">
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Daftar Akun Baru</h2>
+        <p class="text-xs text-slate-500 font-medium">Temukan spot nongkrong hemat dan booking meja instan</p>
     </div>
 
-    <form method="POST" action="{{ route('register') }}">
+    <form method="POST" action="{{ route('register') }}" class="space-y-4">
         @csrf
 
         <!-- Role Selection -->
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Daftar sebagai:</label>
+        <div>
+            <label class="block text-xs font-bold text-slate-700 mb-2">Daftar sebagai:</label>
             <div class="grid grid-cols-2 gap-3">
-                <label class="relative flex items-center justify-between p-3 border rounded-xl cursor-pointer hover:border-teal-500 transition-colors has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50/50">
+                <label class="relative flex items-center justify-between p-3.5 border border-slate-200 rounded-2xl cursor-pointer hover:border-blue-300 transition-all has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/60 shadow-2xs">
                     <div class="flex items-center">
-                        <input type="radio" name="role" value="user" class="h-4 w-4 text-teal-600 border-gray-300 focus:ring-teal-500" {{ old('role', 'user') === 'user' ? 'checked' : '' }}>
-                        <span class="ml-2.5 text-sm font-semibold text-gray-800">User Biasa</span>
+                        <input type="radio" name="role" value="user" class="h-4 w-4 text-blue-600 border-slate-300 focus:ring-blue-500" {{ old('role', 'user') === 'user' ? 'checked' : '' }}>
+                        <span class="ml-2.5 text-xs font-bold text-slate-800">Pelajar / Tamu</span>
                     </div>
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <i class="fa-solid fa-graduation-cap text-slate-400"></i>
                 </label>
 
-                <label class="relative flex items-center justify-between p-3 border rounded-xl cursor-pointer hover:border-teal-500 transition-colors has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50/50">
+                <label class="relative flex items-center justify-between p-3.5 border border-slate-200 rounded-2xl cursor-pointer hover:border-blue-300 transition-all has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/60 shadow-2xs">
                     <div class="flex items-center">
-                        <input type="radio" name="role" value="staff" class="h-4 w-4 text-teal-600 border-gray-300 focus:ring-teal-500" {{ old('role') === 'staff' ? 'checked' : '' }}>
-                        <span class="ml-2.5 text-sm font-semibold text-gray-800">Staf Toko</span>
+                        <input type="radio" name="role" value="staff" class="h-4 w-4 text-blue-600 border-slate-300 focus:ring-blue-500" {{ old('role') === 'staff' ? 'checked' : '' }}>
+                        <span class="ml-2.5 text-xs font-bold text-slate-800">Mitra Staf Toko</span>
                     </div>
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <i class="fa-solid fa-store text-slate-400"></i>
                 </label>
             </div>
-            <x-input-error :messages="$errors->get('role')" class="mt-2" />
+            <x-input-error :messages="$errors->get('role')" class="mt-1 text-xs" />
         </div>
 
         <!-- Name -->
         <div>
-            <x-input-label for="name" :value="__('Nama Lengkap')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" placeholder="John Doe" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+            <label for="name" class="block text-xs font-bold text-slate-700 mb-1.5">Nama Lengkap</label>
+            <input id="name"
+                   class="block w-full text-sm font-semibold rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 p-3 shadow-2xs"
+                   type="text"
+                   name="name"
+                   value="{{ old('name') }}"
+                   required autofocus autocomplete="name"
+                   placeholder="Nama lengkap Anda" />
+            <x-input-error :messages="$errors->get('name')" class="mt-1 text-xs" />
         </div>
 
         <!-- Email Address -->
-        <div class="mt-4">
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" placeholder="nama@email.com" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        <div>
+            <label for="email" class="block text-xs font-bold text-slate-700 mb-1.5">Alamat Email</label>
+            <input id="email"
+                   class="block w-full text-sm font-semibold rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 p-3 shadow-2xs"
+                   type="email"
+                   name="email"
+                   value="{{ old('email') }}"
+                   required autocomplete="username"
+                   placeholder="nama@email.com" />
+            <x-input-error :messages="$errors->get('email')" class="mt-1 text-xs" />
         </div>
 
         <!-- Phone -->
-        <div class="mt-4">
-            <x-input-label for="phone" :value="__('Nomor WhatsApp / HP (Opsional)')" />
-            <x-text-input id="phone" class="block mt-1 w-full" type="text" name="phone" :value="old('phone')" placeholder="08123456789" />
-            <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+        <div>
+            <label for="phone" class="block text-xs font-bold text-slate-700 mb-1.5">Nomor WhatsApp / HP (Opsional)</label>
+            <input id="phone"
+                   class="block w-full text-sm font-semibold rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 p-3 shadow-2xs"
+                   type="text"
+                   name="phone"
+                   value="{{ old('phone') }}"
+                   placeholder="08123456789" />
+            <x-input-error :messages="$errors->get('phone')" class="mt-1 text-xs" />
         </div>
 
         <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="new-password"
-                            placeholder="Minimal 8 karakter" />
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        <div>
+            <label for="password" class="block text-xs font-bold text-slate-700 mb-1.5">Password</label>
+            <input id="password"
+                   class="block w-full text-sm font-semibold rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 p-3 shadow-2xs"
+                   type="password"
+                   name="password"
+                   required autocomplete="new-password"
+                   placeholder="Minimal 8 karakter" />
+            <x-input-error :messages="$errors->get('password')" class="mt-1 text-xs" />
         </div>
 
         <!-- Confirm Password -->
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Konfirmasi Password')" />
-            <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                            type="password"
-                            name="password_confirmation" required autocomplete="new-password"
-                            placeholder="Ulangi password" />
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        <div>
+            <label for="password_confirmation" class="block text-xs font-bold text-slate-700 mb-1.5">Konfirmasi Password</label>
+            <input id="password_confirmation"
+                   class="block w-full text-sm font-semibold rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 p-3 shadow-2xs"
+                   type="password"
+                   name="password_confirmation"
+                   required autocomplete="new-password"
+                   placeholder="Ulangi password" />
+            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-1 text-xs" />
         </div>
 
-        <div class="flex items-center justify-between mt-6">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500" href="{{ route('login') }}">
-                {{ __('Sudah punya akun?') }}
-            </a>
+        <div class="pt-2">
+            <button type="submit"
+                    class="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm shadow-lg shadow-blue-600/25 hover:shadow-blue-600/35 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center space-x-2">
+                <span>Daftar Sekarang</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+        </div>
 
-            <x-primary-button class="ms-4 bg-teal-600 hover:bg-teal-700 focus:bg-teal-700 active:bg-teal-800">
-                {{ __('Daftar Sekarang') }}
-            </x-primary-button>
+        <div class="text-center pt-2 border-t border-slate-100">
+            <p class="text-xs text-slate-500">
+                Sudah punya akun?
+                <a href="{{ route('login') }}" class="font-bold text-blue-600 hover:text-blue-800 transition">
+                    Masuk di sini
+                </a>
+            </p>
         </div>
     </form>
 </x-guest-layout>

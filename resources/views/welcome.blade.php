@@ -7,6 +7,8 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .hero-pattern {
@@ -75,6 +77,7 @@
             </div>
             
             <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-600">
+                <a href="#spot-tersedia" class="hover:text-blue-600 transition font-semibold">Spot Nongkrong</a>
                 <a href="#fitur" class="hover:text-blue-600 transition">Fitur Utama</a>
                 <a href="#kategori" class="hover:text-blue-600 transition">Kategori Spot</a>
                 <a href="#keunggulan" class="hover:text-blue-600 transition">Keunggulan LBS</a>
@@ -131,7 +134,7 @@
 
             <!-- CTA Buttons -->
             <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
-                <a href="#fitur" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-2xl shadow-xl shadow-blue-600/25 transition-all flex items-center justify-center gap-2 text-base group">
+                <a href="#spot-tersedia" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-2xl shadow-xl shadow-blue-600/25 transition-all flex items-center justify-center gap-2 text-base group">
                     Cari Spot Terdekat 
                     <span class="group-hover:translate-x-1 transition-transform">→</span>
                 </a>
@@ -163,8 +166,145 @@
         </div>
     </section>
 
+    <!-- SPOT TERSEDIA SECTION (CARD TOKO DENGAN REDIRECT LOGIN) -->
+    <section id="spot-tersedia" class="py-24 bg-slate-50 border-t border-slate-200 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-4">
+                <div>
+                    <div class="inline-flex items-center gap-2 py-1 px-3.5 rounded-full text-xs font-bold bg-blue-50 border border-blue-200 text-blue-700 mb-3 shadow-2xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Spot Terverifikasi & Siap Dibooking
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
+                        Spot Nongkrong &amp; Nugas <span class="text-blue-600">Tersedia</span>
+                    </h2>
+                    <p class="text-slate-500 text-sm mt-2 max-w-xl leading-relaxed">
+                        Pilihan tempat hangout, warkop, dan cafe favorit pelajar. Klik kartu spot manapun untuk langsung masuk dan reservasi mejamu!
+                    </p>
+                </div>
+
+                <a href="{{ route('login') }}" class="inline-flex items-center space-x-2 text-sm font-bold text-blue-600 hover:text-blue-700 px-5 py-2.5 rounded-xl bg-blue-50/80 hover:bg-blue-100 border border-blue-200 transition shadow-2xs self-start md:self-auto">
+                    <span>Masuk untuk Reservasi</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            @if(isset($stores) && $stores->count() > 0)
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+                    @foreach($stores as $store)
+                        @php
+                            $primaryPhoto = $store->photos->firstWhere('is_primary', true) ?? $store->photos->first();
+                            $photoUrl = $primaryPhoto ? asset('storage/' . $primaryPhoto->photo_path) : null;
+                            $hasTodayAvailable = $store->slots->where('date', today())->where('status', 'available')->count() > 0;
+                        @endphp
+                        <a href="{{ route('login') }}"
+                           class="group flex flex-col bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-2xl hover:border-blue-400 hover:-translate-y-2 active:translate-y-0 transition-all duration-300 overflow-hidden cursor-pointer"
+                           title="Klik untuk Masuk & Reservasi di {{ $store->name }}">
+                            <!-- Image Container -->
+                            <div class="relative w-full h-56 bg-slate-100 overflow-hidden flex items-center justify-center">
+                                @if($photoUrl)
+                                    <img src="{{ $photoUrl }}"
+                                         alt="{{ $store->name }}"
+                                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div style="display: none;" class="w-full h-full bg-gradient-to-tr from-blue-600/10 to-indigo-600/20 items-center justify-center text-slate-400">
+                                        <i class="fa-solid fa-store text-4xl text-slate-300"></i>
+                                    </div>
+                                @else
+                                    <div class="w-full h-full bg-gradient-to-tr from-blue-600/10 to-indigo-600/20 flex items-center justify-center text-slate-400">
+                                        <i class="fa-solid fa-store text-4xl text-slate-300"></i>
+                                    </div>
+                                @endif
+
+                                <!-- Gradient Overlay -->
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+
+                                <!-- Category Tag -->
+                                <span class="absolute top-3.5 left-3.5 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md text-slate-800 font-extrabold text-[11px] shadow-sm flex items-center space-x-1.5 border border-white/40">
+                                    <i class="{{ $store->category->icon ?? 'fa-solid fa-tag' }} text-blue-600 text-xs"></i>
+                                    <span>{{ $store->category->name ?? 'Tempat' }}</span>
+                                </span>
+
+                                <!-- Slot Status Badge -->
+                                @if($hasTodayAvailable)
+                                    <span class="absolute top-3.5 right-3.5 px-2.5 py-1 rounded-xl bg-emerald-500/95 backdrop-blur-md text-white font-extrabold text-[10px] shadow-sm flex items-center space-x-1.5 border border-emerald-400/40">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                                        <span>Slot Hari Ini Ada</span>
+                                    </span>
+                                @endif
+
+                                <!-- Login to Book Hover Prompt -->
+                                <div class="absolute inset-x-0 bottom-0 p-3 bg-slate-900/80 backdrop-blur-sm transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center justify-between text-white text-xs font-bold">
+                                    <span>Klik untuk Masuk & Reservasi Meja</span>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+                            </div>
+
+                            <!-- Content Body -->
+                            <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
+                                <div>
+                                    <div class="flex items-start justify-between gap-2">
+                                        <h3 class="font-black text-slate-900 group-hover:text-blue-600 transition-colors duration-200 line-clamp-1 text-lg leading-snug">
+                                            {{ $store->name }}
+                                        </h3>
+                                        <!-- Rating -->
+                                        <div class="flex items-center space-x-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/80 shrink-0">
+                                            <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                                            <span class="text-xs font-black text-amber-900">{{ number_format($store->average_rating, 1) }}</span>
+                                            <span class="text-[10px] text-amber-700 font-semibold">({{ $store->reviews_count }})</span>
+                                        </div>
+                                    </div>
+
+                                    <p class="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+                                        {{ $store->description }}
+                                    </p>
+                                </div>
+
+                                <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                                    <!-- City Location -->
+                                    <div class="flex items-center space-x-1.5 text-slate-600 font-medium">
+                                        <i class="fa-solid fa-location-dot text-blue-500 text-xs"></i>
+                                        <span class="truncate max-w-[150px]">{{ $store->city }}</span>
+                                    </div>
+
+                                    <!-- Prompt -->
+                                    <span class="inline-flex items-center space-x-1 font-bold text-blue-600 group-hover:text-blue-700 group-hover:translate-x-0.5 transition-all">
+                                        <span>Reservasi Meja</span>
+                                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+
+                <div class="mt-14 text-center">
+                    <div class="inline-flex flex-col sm:flex-row items-center gap-4 p-5 rounded-3xl bg-white border border-slate-200 shadow-sm">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-shield-heart text-base"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-xs font-bold text-slate-900">Ingin melihat spot nongkrong lainnya di kotamu?</p>
+                                <p class="text-[11px] text-slate-500">Masuk atau daftarkan akun iFind gratis untuk eksplorasi lengkap</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <a href="{{ route('login') }}" class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition">
+                                Masuk Akun
+                            </a>
+                            <a href="{{ route('register') }}" class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+                                Daftar Gratis
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+    </section>
+
     <!-- FITUR UTAMA SECTION -->
-    <section id="fitur" class="py-24 bg-slate-50 border-t border-slate-200 relative">
+    <section id="fitur" class="py-24 bg-white border-t border-slate-200 relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-2xl mx-auto mb-16">
                 <h2 class="text-xs font-bold tracking-widest text-blue-600 uppercase mb-3">Fitur Unggulan Sistem</h2>
