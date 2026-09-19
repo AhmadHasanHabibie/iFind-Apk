@@ -153,72 +153,96 @@ class PromptTwoStaffModuleTest extends TestCase
         $store = $staff->store;
         $user = User::where('role', 'user')->first();
 
-        // Buat slot dengan kapasitas 4
-        $slot = Slot::create([
+        // 1. Booking pada slot yang sudah penuh tidak bisa dikonfirmasi
+        $slotFull = Slot::create([
             'store_id' => $store->id,
             'date' => Carbon::tomorrow()->toDateString(),
             'start_time' => '08:00',
             'end_time' => '10:00',
             'capacity' => 4,
-            'booked_seats' => 0,
-            'status' => 'available',
+            'booked_seats' => 4,
+            'status' => 'full',
         ]);
 
-        // 1. Booking meminta 5 kursi (melebihi kapasitas slot 4)
         $overBooking = Booking::create([
             'booking_code' => 'OVER-001',
             'user_id' => $user->id,
             'store_id' => $store->id,
-            'slot_id' => $slot->id,
-            'booking_date' => $slot->date,
+            'slot_id' => $slotFull->id,
+            'booking_date' => $slotFull->date,
             'seat_count' => 5,
-            'status' => 'pending',
+            'price_per_pax_snapshot' => 25000,
+            'total_amount' => 125000,
+            'amount_due' => 62500,
+            'payment_deadline' => now()->addMinutes(60),
+            'status' => 'pending_verification',
         ]);
 
         $overConfirmResponse = $this->actingAs($staff)->patch(route('staff.bookings.confirm', $overBooking));
         $overConfirmResponse->assertSessionHas('error');
-        $this->assertEquals('pending', $overBooking->fresh()->status);
-        $this->assertEquals(0, $slot->fresh()->booked_seats);
+        $this->assertEquals('pending_verification', $overBooking->fresh()->status);
 
-        // 2. Booking valid sebesar 4 kursi (pas memenuhi kapasitas)
+        // 2. Booking valid pada slot dengan kuota cukup
+        $availableSlot = Slot::create([
+            'store_id' => $store->id,
+            'date' => Carbon::tomorrow()->toDateString(),
+            'start_time' => '11:00',
+            'end_time' => '13:00',
+            'capacity' => 4,
+            'booked_seats' => 4,
+            'status' => 'full',
+        ]);
+
         $validBooking = Booking::create([
             'booking_code' => 'VALID-002',
             'user_id' => $user->id,
             'store_id' => $store->id,
-            'slot_id' => $slot->id,
-            'booking_date' => $slot->date,
+            'slot_id' => $availableSlot->id,
+            'booking_date' => $availableSlot->date,
             'seat_count' => 4,
-            'status' => 'pending',
+            'price_per_pax_snapshot' => 25000,
+            'total_amount' => 100000,
+            'amount_due' => 50000,
+            'payment_deadline' => now()->addMinutes(60),
+            'status' => 'pending_verification',
         ]);
 
         $validConfirmResponse = $this->actingAs($staff)->patch(route('staff.bookings.confirm', $validBooking));
-        $validConfirmResponse->assertRedirect(route('staff.bookings.index', ['status' => 'confirmed']));
+        $validConfirmResponse->assertRedirect(route('staff.bookings.index', ['status' => 'active']));
 
         $this->assertEquals('confirmed', $validBooking->fresh()->status);
-        $this->assertEquals(4, $slot->fresh()->booked_seats);
-        // Observer harus otomatis mengubah status menjadi 'full'
-        $this->assertEquals('full', $slot->fresh()->status);
+        $this->assertNotNull($validBooking->fresh()->qr_token);
+        $this->assertEquals($staff->id, $validBooking->fresh()->payment_verified_by);
     }
 
     public function test_booking_rejection_requires_reason()
     {
         $staff = User::where('email', 'arief.staff@ifind.id')->first();
-        $pendingBooking = Booking::where('store_id', $staff->store->id)->where('status', 'pending')->first();
+        $pendingBooking = Booking::where('store_id', $staff->store->id)
+            ->where('status', 'pending_verification')
+            ->first();
+
+        $this->assertNotNull($pendingBooking);
 
         // Reject tanpa alasan harus gagal validasi
         $failResponse = $this->actingAs($staff)->patch(route('staff.bookings.reject', $pendingBooking), [
+            'reject_type' => 'invalid_payment',
             'rejection_reason' => '',
         ]);
         $failResponse->assertSessionHasErrors(['rejection_reason']);
 
         // Reject dengan alasan valid
+        $initialSeats = $pendingBooking->slot->booked_seats;
         $successResponse = $this->actingAs($staff)->patch(route('staff.bookings.reject', $pendingBooking), [
-            'rejection_reason' => 'Kafe dibooking untuk event privat.',
+            'reject_type' => 'invalid_payment',
+            'rejection_reason' => 'Bukti transfer tidak terbaca / palsu.',
         ]);
         $successResponse->assertRedirect(route('staff.bookings.index', ['status' => 'pending']));
 
-        $this->assertEquals('rejected', $pendingBooking->fresh()->status);
-        $this->assertEquals('Kafe dibooking untuk event privat.', $pendingBooking->fresh()->rejection_reason);
+        $this->assertEquals('rejected_invalid_payment', $pendingBooking->fresh()->status);
+        $this->assertEquals('Bukti transfer tidak terbaca / palsu.', $pendingBooking->fresh()->payment_rejection_reason);
+        // Kursi dilepaskan
+        $this->assertEquals(max(0, $initialSeats - $pendingBooking->seat_count), $pendingBooking->slot->fresh()->booked_seats);
     }
 
     public function test_chat_interaction_and_ajax_polling()
@@ -299,7 +323,7 @@ class PromptTwoStaffModuleTest extends TestCase
             'slot_id' => $slotB->id,
             'booking_date' => $slotB->date,
             'seat_count' => 2,
-            'status' => 'pending',
+            'status' => 'pending_verification',
         ]);
 
         // Staf A mencoba akses/edit slot Toko B -> 403 Forbidden

@@ -50,6 +50,13 @@ class StoreDummySeeder extends Seeder
                 'status' => 'approved',
                 'is_active' => true,
                 'average_rating' => 4.8,
+                'price_per_pax' => 25000,
+                'dp_percentage' => 50,
+                'payment_timeout_minutes' => 60,
+                'bank_name' => 'Bank Central Asia (BCA)',
+                'bank_account_number' => '8830912831',
+                'bank_account_holder' => 'Titik Temu Coffee',
+                'qris_image_path' => 'qris/dummy/titik-temu-qris.png',
             ]
         );
 

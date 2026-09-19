@@ -28,6 +28,13 @@ class Store extends Model
         'rejection_reason',
         'is_active',
         'average_rating',
+        'price_per_pax',
+        'dp_percentage',
+        'payment_timeout_minutes',
+        'bank_name',
+        'bank_account_number',
+        'bank_account_holder',
+        'qris_image_path',
     ];
 
     protected $casts = [
@@ -36,7 +43,18 @@ class Store extends Model
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
         'average_rating' => 'decimal:1',
+        'price_per_pax' => 'decimal:2',
+        'dp_percentage' => 'integer',
+        'payment_timeout_minutes' => 'integer',
     ];
+
+    public function canAcceptBookings(): bool
+    {
+        $hasPrice = ! is_null($this->price_per_pax) && $this->price_per_pax > 0;
+        $hasPaymentMethod = (! empty($this->bank_name) && ! empty($this->bank_account_number)) || ! empty($this->qris_image_path);
+
+        return $hasPrice && $hasPaymentMethod;
+    }
 
     public function user(): BelongsTo
     {

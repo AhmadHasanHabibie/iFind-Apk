@@ -14,6 +14,9 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
 
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::get('/bookings/{booking:booking_code}/payment', [BookingController::class, 'payment'])->name('bookings.payment');
+    Route::post('/bookings/{booking}/upload-proof', [BookingController::class, 'uploadProof'])->name('bookings.upload-proof');
+    Route::get('/bookings/{booking:booking_code}/ticket', [BookingController::class, 'ticket'])->name('bookings.ticket');
     Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
 
     Route::post('/bookings/{booking}/review', [ReviewController::class, 'store'])->name('bookings.review');

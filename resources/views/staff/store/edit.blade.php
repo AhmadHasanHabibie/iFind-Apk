@@ -182,10 +182,13 @@
                 </div>
             </div>
 
-            <!-- 4. Jam Operasional Partial -->
+            <!-- 4. Pengaturan Harga & Pembayaran Partial -->
+            @include('staff.store.partials._payment')
+
+            <!-- 5. Jam Operasional Partial -->
             @include('staff.store.partials._hours')
 
-            <!-- 5. Foto Galeri Partial -->
+            <!-- 6. Foto Galeri Partial -->
             @include('staff.store.partials._photos')
 
             <!-- Submit Button -->

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Staff\BookingController;
 use App\Http\Controllers\Staff\ChatController;
 use App\Http\Controllers\Staff\DashboardController;
+use App\Http\Controllers\Staff\ScanController;
 use App\Http\Controllers\Staff\SlotController;
 use App\Http\Controllers\Staff\StoreProfileController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,11 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
         Route::patch('/bookings/{booking}/confirm', [BookingController::class, 'confirm'])->name('bookings.confirm');
         Route::patch('/bookings/{booking}/reject', [BookingController::class, 'reject'])->name('bookings.reject');
         Route::patch('/bookings/{booking}/complete', [BookingController::class, 'complete'])->name('bookings.complete');
+        Route::patch('/bookings/{booking}/refund', [BookingController::class, 'refund'])->name('bookings.refund');
+
+        // Scan QR Check-in
+        Route::get('/scan', [ScanController::class, 'index'])->name('scan.index');
+        Route::post('/scan/check-in', [ScanController::class, 'checkIn'])->name('scan.check-in');
 
         Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
         Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');

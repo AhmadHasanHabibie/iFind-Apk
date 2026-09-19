@@ -37,13 +37,8 @@ class Slot extends Model
         return $this->hasMany(Booking::class);
     }
 
-    public function getPendingSeatsAttribute(): int
+    public function getAvailableSeatsAttribute(): int
     {
-        return (int) $this->bookings()->where('status', 'pending')->sum('seat_count');
-    }
-
-    public function getEstimatedAvailableAttribute(): int
-    {
-        return max(0, $this->capacity - $this->booked_seats - $this->pending_seats);
+        return max(0, $this->capacity - $this->booked_seats);
     }
 }

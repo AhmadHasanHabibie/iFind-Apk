@@ -57,7 +57,24 @@ class StoreProfileController extends Controller
             'opening_hours' => ['nullable', 'array'],
             'photos' => ['nullable', 'array'],
             'photos.*' => ['image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'price_per_pax' => ['nullable', 'numeric', 'min:0'],
+            'dp_percentage' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'payment_timeout_minutes' => ['nullable', 'integer', 'min:5', 'max:1440'],
+            'bank_name' => ['nullable', 'string', 'max:100'],
+            'bank_account_number' => ['nullable', 'string', 'max:50'],
+            'bank_account_holder' => ['nullable', 'string', 'max:100'],
+            'qris_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
+
+        // Cek validasi bank / QRIS jika ada harga
+        $hasBank = ! empty($validated['bank_name']) || ! empty($validated['bank_account_number']) || ! empty($validated['bank_account_holder']);
+        $hasQris = $request->hasFile('qris_image');
+
+        if (! empty($validated['price_per_pax']) && ! $hasBank && ! $hasQris) {
+            return back()->withErrors([
+                'bank_name' => 'Minimal salah satu metode pembayaran wajib diisi: Informasi rekening bank ATAU upload gambar QRIS.',
+            ])->withInput();
+        }
 
         // Generate unique slug
         $slug = Str::slug($validated['name']);
@@ -86,7 +103,21 @@ class StoreProfileController extends Controller
             'status' => 'approved', // Auto approved for verified staff
             'is_active' => true,
             'average_rating' => 0.0,
+            'price_per_pax' => $validated['price_per_pax'] ?? null,
+            'dp_percentage' => $validated['dp_percentage'] ?? 100,
+            'payment_timeout_minutes' => $validated['payment_timeout_minutes'] ?? 60,
+            'bank_name' => $validated['bank_name'] ?? null,
+            'bank_account_number' => $validated['bank_account_number'] ?? null,
+            'bank_account_holder' => $validated['bank_account_holder'] ?? null,
         ]);
+
+        // Handle QRIS image
+        if ($request->hasFile('qris_image')) {
+            $file = $request->file('qris_image');
+            $ext = $file->getClientOriginalExtension();
+            $path = $file->storeAs('qris', "{$store->id}.{$ext}", 'public');
+            $store->update(['qris_image_path' => $path]);
+        }
 
         // Sync facilities
         if (! empty($validated['facilities'])) {
@@ -144,7 +175,32 @@ class StoreProfileController extends Controller
             'opening_hours' => ['nullable', 'array'],
             'photos' => ['nullable', 'array'],
             'photos.*' => ['image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'price_per_pax' => ['nullable', 'numeric', 'min:0'],
+            'dp_percentage' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'payment_timeout_minutes' => ['nullable', 'integer', 'min:5', 'max:1440'],
+            'bank_name' => ['nullable', 'string', 'max:100'],
+            'bank_account_number' => ['nullable', 'string', 'max:50'],
+            'bank_account_holder' => ['nullable', 'string', 'max:100'],
+            'qris_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
+
+        // Cek jika toko punya slot aktif dan harga kosong
+        $hasActiveSlots = $store->slots()->where('status', 'available')->whereDate('date', '>=', today())->exists();
+        if ($hasActiveSlots && (is_null($validated['price_per_pax'] ?? null) || $validated['price_per_pax'] === '')) {
+            return back()->withErrors([
+                'price_per_pax' => 'Toko memiliki slot waktu aktif. Harga per orang (price_per_pax) wajib diisi.',
+            ])->withInput();
+        }
+
+        // Cek minimal salah satu rekening atau QRIS terisi (jika harga diisi atau punya slot aktif)
+        $hasBank = ! empty($validated['bank_name']) || ! empty($validated['bank_account_number']) || ! empty($validated['bank_account_holder']);
+        $hasQris = $request->hasFile('qris_image') || ! empty($store->qris_image_path);
+
+        if ((! empty($validated['price_per_pax']) || $hasActiveSlots) && ! $hasBank && ! $hasQris) {
+            return back()->withErrors([
+                'bank_name' => 'Minimal salah satu metode pembayaran wajib diisi: Informasi rekening bank ATAU upload gambar QRIS.',
+            ])->withInput();
+        }
 
         // Update slug if name changes
         $slug = $store->slug;
@@ -161,7 +217,7 @@ class StoreProfileController extends Controller
         // Format opening hours JSON
         $formattedHours = $this->buildOpeningHoursJson($request->input('opening_hours', []));
 
-        $store->update([
+        $updateData = [
             'name' => $validated['name'],
             'slug' => $slug,
             'category_id' => $validated['category_id'],
@@ -172,7 +228,23 @@ class StoreProfileController extends Controller
             'longitude' => $validated['longitude'] ?? null,
             'phone' => $validated['phone'] ?? null,
             'opening_hours' => $formattedHours,
-        ]);
+            'price_per_pax' => $validated['price_per_pax'] ?? null,
+            'dp_percentage' => $validated['dp_percentage'] ?? 100,
+            'payment_timeout_minutes' => $validated['payment_timeout_minutes'] ?? 60,
+            'bank_name' => $validated['bank_name'] ?? null,
+            'bank_account_number' => $validated['bank_account_number'] ?? null,
+            'bank_account_holder' => $validated['bank_account_holder'] ?? null,
+        ];
+
+        // Handle new QRIS image
+        if ($request->hasFile('qris_image')) {
+            $file = $request->file('qris_image');
+            $ext = $file->getClientOriginalExtension();
+            $path = $file->storeAs('qris', "{$store->id}.{$ext}", 'public');
+            $updateData['qris_image_path'] = $path;
+        }
+
+        $store->update($updateData);
 
         // Sync facilities
         $store->facilities()->sync($validated['facilities'] ?? []);

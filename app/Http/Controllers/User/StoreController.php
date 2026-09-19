@@ -35,9 +35,10 @@ class StoreController extends Controller
             return response()->json([
                 'success' => true,
                 'date' => $selectedDate,
-                'slots' => $slots->map(function ($slot) {
+                'can_accept_bookings' => $store->canAcceptBookings(),
+                'slots' => $slots->map(function ($slot) use ($store) {
                     $isPast = Carbon::parse($slot->date)->isPast() && ! Carbon::parse($slot->date)->isToday();
-                    $isBookable = ($slot->status !== 'closed' && $slot->estimated_available > 0 && ! $isPast);
+                    $isBookable = ($store->canAcceptBookings() && $slot->status !== 'closed' && $slot->available_seats > 0 && ! $isPast);
 
                     return [
                         'id' => $slot->id,
@@ -45,8 +46,7 @@ class StoreController extends Controller
                         'end_time' => substr($slot->end_time, 0, 5),
                         'capacity' => $slot->capacity,
                         'booked_seats' => $slot->booked_seats,
-                        'pending_seats' => $slot->pending_seats,
-                        'estimated_available' => $slot->estimated_available,
+                        'available_seats' => $slot->available_seats,
                         'status' => $slot->status,
                         'is_bookable' => $isBookable,
                     ];

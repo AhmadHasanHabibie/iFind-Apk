@@ -59,29 +59,53 @@
                                 </span>
 
                                 <!-- Status Badge -->
-                                @if($booking->status === 'pending')
+                                @if($booking->status === 'awaiting_payment')
+                                    @php
+                                        $minsLeft = $booking->payment_deadline ? max(0, \Carbon\Carbon::now()->diffInMinutes($booking->payment_deadline, false)) : 0;
+                                    @endphp
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2 animate-ping"></span>
-                                        Menunggu Konfirmasi Toko
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-ping"></span>
+                                        Menunggu Pembayaran (Sisa {{ $minsLeft }} m)
+                                    </span>
+                                @elseif($booking->status === 'pending_verification')
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5 animate-pulse"></span>
+                                        Menunggu Verifikasi Toko
                                     </span>
                                 @elseif($booking->status === 'confirmed')
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
                                         <i class="fa-solid fa-circle-check text-[11px] mr-1.5 text-emerald-600"></i>
-                                        Dikonfirmasi Toko
+                                        Terkonfirmasi (E-Ticket Aktif)
+                                    </span>
+                                @elseif($booking->status === 'checked_in')
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">
+                                        <i class="fa-solid fa-qrcode text-[11px] mr-1.5 text-emerald-700"></i>
+                                        Sudah Check-in di Lokasi
                                     </span>
                                 @elseif($booking->status === 'completed')
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
-                                        <i class="fa-solid fa-check text-[11px] mr-1.5 text-blue-600"></i>
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
+                                        <i class="fa-solid fa-check-double text-[11px] mr-1.5 text-slate-600"></i>
                                         Selesai
                                     </span>
-                                @elseif($booking->status === 'rejected')
+                                @elseif($booking->status === 'rejected_invalid_payment')
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
                                         <i class="fa-solid fa-ban text-[11px] mr-1.5 text-rose-600"></i>
-                                        Ditolak
+                                        Ditolak (Pembayaran Tidak Valid)
                                     </span>
-                                @elseif($booking->status === 'cancelled')
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                                        Dibatalkan
+                                @elseif($booking->status === 'rejected_store_full')
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-800 border border-orange-200 shadow-2xs">
+                                        <i class="fa-solid fa-circle-exclamation text-[11px] mr-1.5 text-orange-600"></i>
+                                        Ditolak (Tempat Penuh)
+                                    </span>
+                                @elseif($booking->status === 'refunded')
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200 shadow-2xs">
+                                        <i class="fa-solid fa-rotate-left text-[11px] mr-1.5 text-purple-600"></i>
+                                        Dana Telah Dikembalikan
+                                    </span>
+                                @elseif($booking->status === 'cancelled_expired')
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                        <i class="fa-regular fa-clock text-[11px] mr-1.5 text-slate-500"></i>
+                                        Dibatalkan (Waktu Habis)
                                     </span>
                                 @endif
                             </div>
@@ -103,6 +127,9 @@
                                     <i class="fa-solid fa-chair text-slate-400"></i>
                                     <strong class="text-slate-800 font-bold">{{ $booking->seat_count }} Kursi</strong>
                                 </span>
+                                <span class="flex items-center space-x-1.5 text-blue-700 font-bold">
+                                    <span>Total: Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</span>
+                                </span>
                             </div>
 
                             @if($booking->notes)
@@ -111,10 +138,29 @@
                                 </p>
                             @endif
 
-                            @if($booking->status === 'rejected' && $booking->rejection_reason)
+                            @if($booking->status === 'rejected_invalid_payment' && $booking->payment_rejection_reason)
                                 <div class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-900 leading-relaxed">
                                     <strong class="block mb-0.5 font-bold">Alasan Penolakan Toko:</strong>
-                                    {{ $booking->rejection_reason }}
+                                    {{ $booking->payment_rejection_reason }}
+                                </div>
+                            @endif
+
+                            @if($booking->status === 'rejected_store_full')
+                                <div class="p-3 bg-orange-50 border border-orange-200 rounded-2xl text-xs text-orange-900 leading-relaxed space-y-1">
+                                    <strong class="block font-bold">Alasan Penolakan: Tempat Penuh</strong>
+                                    <p class="text-[11px] text-orange-800">
+                                        Tim toko akan menghubungi Anda untuk proses pengembalian dana (refund).
+                                    </p>
+                                    @if($booking->payment_rejection_reason)
+                                        <p class="text-[11px] text-slate-600 italic">"{{ $booking->payment_rejection_reason }}"</p>
+                                    @endif
+                                </div>
+                            @endif
+
+                            @if($booking->status === 'refunded' && $booking->refund_note)
+                                <div class="p-3 bg-purple-50 border border-purple-200 rounded-2xl text-xs text-purple-900 leading-relaxed">
+                                    <strong class="block mb-0.5 font-bold">Catatan Pengembalian Dana:</strong>
+                                    {{ $booking->refund_note }}
                                 </div>
                             @endif
 
@@ -137,43 +183,50 @@
 
                     <!-- Actions Column -->
                     <div class="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
-                        @if($booking->status === 'pending')
-                            <!-- Cancel Booking Button using Custom Confirmation Dialog (No Browser confirm popup) -->
-                            <form x-ref="cancelForm{{ $booking->id }}" action="{{ route('user.bookings.cancel', $booking) }}" method="POST">
-                                @csrf
-                                @method('PATCH')
-                                <button type="button"
-                                        @click="$dispatch('custom-confirm', {
-                                            title: 'Batalkan Reservasi?',
-                                            message: 'Apakah Anda yakin ingin membatalkan pesanan #{{ $booking->booking_code }}? Tindakan ini tidak dapat dibatalkan.',
-                                            confirmText: 'Ya, Batalkan',
-                                            onConfirm: () => $refs.cancelForm{{ $booking->id }}.submit()
-                                        })"
-                                        class="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all hover:shadow-xs">
-                                    <i class="fa-solid fa-xmark mr-1.5"></i> Batalkan Reservasi
-                                </button>
-                            </form>
-                        @elseif($booking->status === 'confirmed')
-                            <div class="text-left md:text-right space-y-2">
-                                <span class="block text-[11px] text-slate-500 max-w-[220px]">
-                                    Reservasi telah dikonfirmasi toko.
-                                </span>
-                                <form action="{{ route('user.chat.start', $booking->store->slug) }}" method="POST">
+                        @if($booking->status === 'awaiting_payment')
+                            <div class="flex flex-col sm:flex-row items-stretch gap-2 w-full sm:w-auto">
+                                <a href="{{ route('user.bookings.payment', $booking->booking_code) }}"
+                                   class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/25 transition flex items-center justify-center space-x-1.5">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                    <span>Upload Bukti Bayar</span>
+                                </a>
+
+                                <form x-ref="cancelForm{{ $booking->id }}" action="{{ route('user.bookings.cancel', $booking) }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition-all flex items-center space-x-1.5">
-                                        <i class="fa-solid fa-comments"></i>
-                                        <span>Hubungi Toko</span>
+                                    @method('PATCH')
+                                    <button type="button"
+                                            @click="$dispatch('custom-confirm', {
+                                                title: 'Batalkan Reservasi?',
+                                                message: 'Apakah Anda yakin ingin membatalkan pesanan #{{ $booking->booking_code }}? Kursi yang ditahan akan dilepaskan kembali.',
+                                                confirmText: 'Ya, Batalkan',
+                                                onConfirm: () => $refs.cancelForm{{ $booking->id }}.submit()
+                                            })"
+                                            class="w-full px-3 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition">
+                                        <i class="fa-solid fa-xmark mr-1"></i> Batal
                                     </button>
                                 </form>
                             </div>
-                        @elseif($booking->status === 'completed' && ! $booking->review)
-                            <!-- Review Button -->
-                            <button type="button"
-                                    @click="activeBookingId = {{ $booking->id }}; activeBookingCode = '{{ $booking->booking_code }}'; reviewModalOpen = true"
-                                    class="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-lg shadow-amber-500/25 hover:shadow-amber-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center space-x-1.5">
-                                <i class="fa-solid fa-star text-xs"></i>
-                                <span>Beri Ulasan</span>
-                            </button>
+                        @elseif($booking->status === 'pending_verification')
+                            <span class="text-xs font-semibold text-slate-500 max-w-[200px] text-left md:text-right">
+                                Menunggu konfirmasi staf toko.
+                            </span>
+                        @elseif(in_array($booking->status, ['confirmed', 'checked_in', 'completed']))
+                            <div class="flex flex-col sm:flex-row items-stretch gap-2 w-full sm:w-auto">
+                                <a href="{{ route('user.bookings.ticket', $booking->booking_code) }}"
+                                   class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition flex items-center justify-center space-x-1.5">
+                                    <i class="fa-solid fa-qrcode"></i>
+                                    <span>Lihat E-Ticket QR</span>
+                                </a>
+
+                                @if($booking->status === 'completed' && ! $booking->review)
+                                    <button type="button"
+                                            @click="activeBookingId = {{ $booking->id }}; activeBookingCode = '{{ $booking->booking_code }}'; reviewModalOpen = true"
+                                            class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/25 transition flex items-center justify-center space-x-1.5">
+                                        <i class="fa-solid fa-star text-xs"></i>
+                                        <span>Beri Ulasan</span>
+                                    </button>
+                                @endif
+                            </div>
                         @endif
 
                         <a href="{{ route('user.stores.show', $booking->store->slug) }}" class="text-xs font-bold text-blue-600 hover:underline flex items-center space-x-1">

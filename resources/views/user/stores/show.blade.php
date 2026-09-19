@@ -1,7 +1,7 @@
 @extends('layouts.user')
 
 @section('content')
-<div class="space-y-8" x-data="storeDetail({{ json_encode($slots->map(function($s) {
+<div class="space-y-8" x-data="storeDetail({{ json_encode($slots->map(function($s) use ($store) {
     $isPast = \Carbon\Carbon::parse($s->date)->isPast() && ! \Carbon\Carbon::parse($s->date)->isToday();
     return [
         'id' => $s->id,
@@ -9,12 +9,11 @@
         'end_time' => substr($s->end_time, 0, 5),
         'capacity' => $s->capacity,
         'booked_seats' => $s->booked_seats,
-        'pending_seats' => $s->pending_seats,
-        'estimated_available' => $s->estimated_available,
+        'available_seats' => $s->available_seats,
         'status' => $s->status,
-        'is_bookable' => ($s->status !== 'closed' && $s->estimated_available > 0 && ! $isPast),
+        'is_bookable' => ($store->canAcceptBookings() && $s->status !== 'closed' && $s->available_seats > 0 && ! $isPast),
     ];
-})) }}, '{{ $selectedDate }}', '{{ $store->slug }}')">
+})) }}, '{{ $selectedDate }}', '{{ $store->slug }}', {{ $store->canAcceptBookings() ? 'true' : 'false' }}, {{ (float) ($store->price_per_pax ?? 0) }}, {{ (int) ($store->dp_percentage ?? 100) }})">
 
     <!-- Back Navigation & Quick Actions -->
     <div class="flex items-center justify-between">
@@ -200,6 +199,20 @@
         </div>
     </div>
 
+    @if(!$store->canAcceptBookings())
+        <div class="p-5 rounded-3xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start space-x-3.5 shadow-sm">
+            <div class="w-9 h-9 rounded-xl bg-amber-100 border border-amber-200 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                <i class="fa-solid fa-lock text-sm"></i>
+            </div>
+            <div>
+                <h4 class="font-extrabold text-sm text-amber-950">Toko Belum Mengatur Pembayaran</h4>
+                <p class="text-xs text-amber-800/90 mt-1 leading-relaxed">
+                    Toko ini belum dapat menerima reservasi saat ini karena sedang memperbarui pengaturan pembayaran dan harga per kursi. Anda tetap dapat melihat informasi toko atau menghubungi staf melalui fitur Chat.
+                </p>
+            </div>
+        </div>
+    @endif
+
     <!-- REAL-TIME SLOT PICKER & RESERVATION SECTION -->
     <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 md:p-10 space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
@@ -261,10 +274,10 @@
                                     <template x-if="slot.status === 'closed'">
                                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">Ditutup</span>
                                     </template>
-                                    <template x-if="slot.status !== 'closed' && slot.estimated_available <= 0">
+                                    <template x-if="slot.status !== 'closed' && slot.available_seats <= 0">
                                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Penuh</span>
                                     </template>
-                                    <template x-if="slot.status !== 'closed' && slot.estimated_available > 0">
+                                    <template x-if="slot.status !== 'closed' && slot.available_seats > 0">
                                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Tersedia</span>
                                     </template>
                                 </div>
@@ -275,15 +288,25 @@
                                 </div>
 
                                 <div class="mt-1 flex items-center justify-between text-xs">
-                                    <span class="text-slate-500 font-medium">Sisa Kursi Estimasi:</span>
+                                    <span class="text-slate-500 font-medium">Sisa Kursi:</span>
                                     <span class="font-black"
-                                          :class="slot.estimated_available > 0 ? 'text-emerald-600' : 'text-slate-400'"
-                                          x-text="slot.estimated_available + ' Kursi'"></span>
+                                          :class="slot.available_seats > 0 ? 'text-emerald-600' : 'text-slate-400'"
+                                          x-text="slot.available_seats + ' Kursi'"></span>
                                 </div>
                             </div>
 
                             <div class="mt-5 pt-3.5 border-t border-slate-100">
-                                <template x-if="slot.is_bookable">
+                                <template x-if="!canAcceptBookings">
+                                    <button type="button"
+                                            disabled
+                                            title="Toko belum melengkapi pengaturan harga & pembayaran"
+                                            class="w-full py-2.5 px-4 rounded-2xl bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed border border-slate-200 flex items-center justify-center space-x-1.5">
+                                        <i class="fa-solid fa-lock text-xs"></i>
+                                        <span>Belum Menerima Booking</span>
+                                    </button>
+                                </template>
+
+                                <template x-if="canAcceptBookings && slot.is_bookable">
                                     <button type="button"
                                             @click="openBookingModal(slot)"
                                             class="w-full py-2.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition flex items-center justify-center space-x-1.5 hover:-translate-y-0.5">
@@ -292,7 +315,7 @@
                                     </button>
                                 </template>
 
-                                <template x-if="!slot.is_bookable">
+                                <template x-if="canAcceptBookings && !slot.is_bookable">
                                     <button type="button"
                                             disabled
                                             class="w-full py-2.5 px-4 rounded-2xl bg-slate-200 text-slate-500 font-bold text-xs cursor-not-allowed">
@@ -344,8 +367,8 @@
                 <input type="hidden" name="store_id" value="{{ $store->id }}">
                 <input type="hidden" name="slot_id" :value="selectedSlot?.id">
 
-                <!-- Schedule Summary Box -->
-                <div class="p-3.5 bg-blue-50/80 rounded-2xl border border-blue-100 text-xs space-y-1.5">
+                <!-- Schedule & Payment Summary Box -->
+                <div class="p-3.5 bg-blue-50/80 rounded-2xl border border-blue-100 text-xs space-y-2">
                     <div class="flex justify-between">
                         <span class="text-blue-700 font-medium">Tanggal:</span>
                         <strong class="text-blue-950 font-bold" x-text="formatDateLabel(currentDate)"></strong>
@@ -356,7 +379,29 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-blue-700 font-medium">Sisa Kursi:</span>
-                        <strong class="text-emerald-700 font-bold" x-text="selectedSlot ? (selectedSlot.estimated_available + ' Kursi') : ''"></strong>
+                        <strong class="text-emerald-700 font-bold" x-text="selectedSlot ? (selectedSlot.available_seats + ' Kursi') : ''"></strong>
+                    </div>
+
+                    <!-- Price breakdown -->
+                    <div class="pt-2 border-t border-blue-100/80 space-y-1">
+                        <div class="flex justify-between items-center text-slate-700">
+                            <span>Tarif per Pax:</span>
+                            <span class="font-bold text-slate-900" x-text="formatRupiah(pricePerPax)"></span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-700">
+                            <span>Total Tagihan (<span x-text="seatCount"></span> kursi):</span>
+                            <span class="font-bold text-slate-900" x-text="formatRupiah(seatCount * pricePerPax)"></span>
+                        </div>
+                        <div class="flex justify-between items-center text-blue-800 font-bold">
+                            <span>Wajib Transfer (DP <span x-text="dpPercentage + '%'"></span>):</span>
+                            <span class="font-black text-blue-700" x-text="formatRupiah(Math.round(seatCount * pricePerPax * dpPercentage / 100))"></span>
+                        </div>
+                        <template x-if="dpPercentage < 100">
+                            <div class="flex justify-between items-center text-emerald-700 text-[11px]">
+                                <span>Sisa Dibayar di Tempat:</span>
+                                <strong x-text="formatRupiah(Math.max(0, (seatCount * pricePerPax) - Math.round(seatCount * pricePerPax * dpPercentage / 100)))"></strong>
+                            </div>
+                        </template>
                     </div>
                 </div>
 
@@ -369,10 +414,10 @@
                            name="seat_count"
                            required
                            min="1"
-                           :max="selectedSlot?.estimated_available || 1"
-                           value="1"
+                           :max="selectedSlot?.available_seats || 1"
+                           x-model.number="seatCount"
                            class="w-full text-sm font-bold rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 p-3">
-                    <p class="text-[11px] text-slate-400 mt-1">Minimal 1 kursi, maksimal sisa kuota estimasi.</p>
+                    <p class="text-[11px] text-slate-400 mt-1">Minimal 1 kursi, maksimal sisa kuota yang tersedia.</p>
                 </div>
 
                 <!-- Notes Input -->
@@ -381,7 +426,7 @@
                         Catatan Tambahan (Opsional)
                     </label>
                     <textarea name="notes"
-                              rows="3"
+                              rows="2"
                               placeholder="Cth: Meja dekat stopkontak, nugas kelompok 2 laptop..."
                               class="w-full text-xs rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 p-3"></textarea>
                 </div>
@@ -391,7 +436,7 @@
                         Batal
                     </button>
                     <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition hover:-translate-y-0.5">
-                        Kirim Permintaan Booking
+                        Lanjut ke Pembayaran &rarr;
                     </button>
                 </div>
             </form>
@@ -458,11 +503,15 @@
 
 @push('scripts')
 <script>
-function storeDetail(initialSlots, initialDate, storeSlug) {
+function storeDetail(initialSlots, initialDate, storeSlug, canAcceptBookings, pricePerPax, dpPercentage) {
     return {
         slots: initialSlots,
         currentDate: initialDate,
         storeSlug: storeSlug,
+        canAcceptBookings: canAcceptBookings,
+        pricePerPax: pricePerPax,
+        dpPercentage: dpPercentage,
+        seatCount: 1,
         loadingSlots: false,
         modalOpen: false,
         selectedSlot: null,
@@ -470,6 +519,10 @@ function storeDetail(initialSlots, initialDate, storeSlug) {
         formatDateLabel(dateStr) {
             const d = new Date(dateStr + 'T00:00:00');
             return d.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        },
+
+        formatRupiah(val) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val || 0);
         },
 
         selectDate(dateStr) {
@@ -486,6 +539,9 @@ function storeDetail(initialSlots, initialDate, storeSlug) {
             .then(res => res.json())
             .then(data => {
                 this.slots = data.slots || [];
+                if (data.can_accept_bookings !== undefined) {
+                    this.canAcceptBookings = data.can_accept_bookings;
+                }
                 this.loadingSlots = false;
             })
             .catch(err => {
@@ -496,6 +552,7 @@ function storeDetail(initialSlots, initialDate, storeSlug) {
 
         openBookingModal(slot) {
             this.selectedSlot = slot;
+            this.seatCount = 1;
             this.modalOpen = true;
         }
     }

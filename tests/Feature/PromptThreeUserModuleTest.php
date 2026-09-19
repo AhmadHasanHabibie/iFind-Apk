@@ -121,8 +121,7 @@ class PromptThreeUserModuleTest extends TestCase
                     'end_time',
                     'capacity',
                     'booked_seats',
-                    'pending_seats',
-                    'estimated_available',
+                    'available_seats',
                     'status',
                     'is_bookable',
                 ],
@@ -130,7 +129,7 @@ class PromptThreeUserModuleTest extends TestCase
         ]);
     }
 
-    public function test_user_can_create_pending_booking_within_estimated_capacity()
+    public function test_user_can_create_booking_holding_capacity_and_redirects_to_payment()
     {
         $user = User::where('role', 'user')->first();
         $store = Store::where('slug', 'kolektif-space-roastery')->first();
@@ -146,23 +145,22 @@ class PromptThreeUserModuleTest extends TestCase
             'notes' => 'Meja untuk 2 orang diskusi tugas.',
         ]);
 
-        $response->assertRedirect(route('user.bookings.index'));
-        $response->assertSessionHas('success', 'Permintaan booking terkirim, menunggu konfirmasi toko.');
+        $createdBooking = Booking::where('user_id', $user->id)
+            ->where('slot_id', $slot->id)
+            ->latest('id')
+            ->first();
 
-        // Booking bertambah
-        $this->assertDatabaseHas('bookings', [
-            'user_id' => $user->id,
-            'store_id' => $store->id,
-            'slot_id' => $slot->id,
-            'seat_count' => 2,
-            'status' => 'pending',
-        ]);
+        $this->assertNotNull($createdBooking);
+        $response->assertRedirect(route('user.bookings.payment', $createdBooking->booking_code));
 
-        // booked_seats pada slot TIDAK BERUBAH saat submit booking user (hanya berubah saat staf konfirmasi)
+        // Booking berstatus awaiting_payment
+        $this->assertEquals('awaiting_payment', $createdBooking->status);
+        $this->assertEquals(2, $createdBooking->seat_count);
+        $this->assertNotNull($createdBooking->payment_deadline);
+
+        // booked_seats pada slot LANGSUNG BERTAMBAH menahan kapasitas
         $slot->refresh();
-        $this->assertEquals($initialBookedSeats, $slot->booked_seats);
-        // Namun pending_seats bertambah dan estimated_available berkurang
-        $this->assertGreaterThanOrEqual(2, $slot->pending_seats);
+        $this->assertEquals($initialBookedSeats + 2, $slot->booked_seats);
     }
 
     public function test_booking_creation_fails_when_exceeding_estimated_available_seats()
@@ -171,7 +169,7 @@ class PromptThreeUserModuleTest extends TestCase
         $store = Store::where('slug', 'sudut-temu-eatery-cafe')->first();
         $slot = $store->slots()->where('status', 'available')->first();
 
-        $excessiveSeats = $slot->estimated_available + 5;
+        $excessiveSeats = $slot->available_seats + 5;
 
         $response = $this->actingAs($user)->from(route('user.stores.show', $store->slug))->post(route('user.bookings.store'), [
             'store_id' => $store->id,
@@ -185,14 +183,39 @@ class PromptThreeUserModuleTest extends TestCase
     public function test_user_can_cancel_pending_booking_but_cannot_cancel_confirmed_booking()
     {
         $user = User::where('role', 'user')->first();
-        $pendingBooking = Booking::where('user_id', $user->id)->where('status', 'pending')->first();
+        $pendingBooking = Booking::where('user_id', $user->id)->where('status', 'awaiting_payment')->first();
 
-        // 1. Batalkan pending booking
+        if (! $pendingBooking) {
+            $store = Store::first();
+            $slot = $store->slots()->first();
+            $pendingBooking = Booking::create([
+                'booking_code' => 'CANCEL-TEST-01',
+                'user_id' => $user->id,
+                'store_id' => $store->id,
+                'slot_id' => $slot->id,
+                'booking_date' => today(),
+                'seat_count' => 1,
+                'price_per_pax_snapshot' => 25000,
+                'total_amount' => 25000,
+                'amount_due' => 25000,
+                'payment_deadline' => now()->addMinutes(30),
+                'status' => 'awaiting_payment',
+            ]);
+            $slot->booked_seats += 1;
+            $slot->save();
+        }
+
+        $slot = $pendingBooking->slot;
+        $initialSeats = $slot->booked_seats;
+
+        // 1. Batalkan awaiting_payment booking
         $cancelResponse = $this->actingAs($user)->patch(route('user.bookings.cancel', $pendingBooking));
         $cancelResponse->assertRedirect(route('user.bookings.index'));
-        $this->assertEquals('cancelled', $pendingBooking->fresh()->status);
+        $this->assertEquals('cancelled_expired', $pendingBooking->fresh()->status);
+        // Kursi dilepas
+        $this->assertEquals(max(0, $initialSeats - $pendingBooking->seat_count), $slot->fresh()->booked_seats);
 
-        // 2. Coba batalkan confirmed booking
+        // 2. Coba batalkan confirmed booking (tidak diizinkan bagi user)
         $confirmedBooking = Booking::where('user_id', $user->id)->where('status', 'confirmed')->first();
         if ($confirmedBooking) {
             $failCancel = $this->actingAs($user)->patch(route('user.bookings.cancel', $confirmedBooking));
@@ -302,7 +325,11 @@ class PromptThreeUserModuleTest extends TestCase
             'slot_id' => $slot->id,
             'booking_date' => today(),
             'seat_count' => 1,
-            'status' => 'pending',
+            'price_per_pax_snapshot' => 25000,
+            'total_amount' => 25000,
+            'amount_due' => 25000,
+            'payment_deadline' => now()->addMinutes(30),
+            'status' => 'awaiting_payment',
         ]);
 
         $convB = Conversation::create([
@@ -339,7 +366,7 @@ class PromptThreeUserModuleTest extends TestCase
         $capacity = $slot->capacity;
 
         // Langkah 1: User mengajukan booking
-        $this->actingAs($user)->post(route('user.bookings.store'), [
+        $bookResponse = $this->actingAs($user)->post(route('user.bookings.store'), [
             'store_id' => $store->id,
             'slot_id' => $slot->id,
             'seat_count' => $capacity,
@@ -348,45 +375,55 @@ class PromptThreeUserModuleTest extends TestCase
 
         $createdBooking = Booking::where('store_id', $store->id)
             ->where('user_id', $user->id)
-            ->where('status', 'pending')
+            ->where('status', 'awaiting_payment')
             ->latest('id')
             ->first();
         $this->assertNotNull($createdBooking);
+        $bookResponse->assertRedirect(route('user.bookings.payment', $createdBooking->booking_code));
 
-        // Langkah 2: Staf Toko (Prompt 2) membuka daftar booking dan melihat booking pending ini
-        $staffIndexResponse = $this->actingAs($staff)->get(route('staff.bookings.index', ['status' => 'pending']));
-        $staffIndexResponse->assertStatus(200);
-        $staffIndexResponse->assertSee($createdBooking->booking_code);
-
-        // Langkah 3: Staf mengonfirmasi booking
-        $confirmResponse = $this->actingAs($staff)->patch(route('staff.bookings.confirm', $createdBooking));
-        $confirmResponse->assertRedirect();
-
-        // Bukti sinkronisasi 2 arah via DB:
-        // A. Booking status menjadi confirmed
-        $this->assertEquals('confirmed', $createdBooking->fresh()->status);
-
-        // B. slot.booked_seats bertambah hingga penuh, dan Observer mengubah status menjadi 'full'
+        // Kapasitas slot langsung tertahan penuh
         $slot->refresh();
         $this->assertEquals($capacity, $slot->booked_seats);
         $this->assertEquals('full', $slot->status);
 
-        // C. User merefresh riwayat booking, melihat statusnya 'confirmed'
-        $userIndexResponse = $this->actingAs($user)->get(route('user.bookings.index', ['tab' => 'active']));
-        $userIndexResponse->assertStatus(200);
-        $userIndexResponse->assertSee($createdBooking->booking_code);
-        $userIndexResponse->assertSee('Dikonfirmasi');
+        // Langkah 2: User mengunggah bukti transfer
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $uploadResponse = $this->actingAs($user)->post(route('user.bookings.upload-proof', $createdBooking), [
+            'payment_proof' => \Illuminate\Http\UploadedFile::fake()->image('transfer.jpg'),
+        ]);
+        $uploadResponse->assertRedirect(route('user.bookings.index'));
+        $this->assertEquals('pending_verification', $createdBooking->fresh()->status);
 
-        // Langkah 4: Staf menandai booking 'complete'
+        // Langkah 3: Staf Toko melihat booking di tab verifikasi dan mengonfirmasi
+        $staffIndexResponse = $this->actingAs($staff)->get(route('staff.bookings.index', ['status' => 'pending']));
+        $staffIndexResponse->assertStatus(200);
+        $staffIndexResponse->assertSee($createdBooking->booking_code);
+
+        $confirmResponse = $this->actingAs($staff)->patch(route('staff.bookings.confirm', $createdBooking));
+        $confirmResponse->assertRedirect();
+        $createdBooking->refresh();
+        $this->assertEquals('confirmed', $createdBooking->status);
+        $this->assertNotNull($createdBooking->qr_token);
+
+        // Langkah 4: User melihat e-ticket dengan QR code
+        $ticketResponse = $this->actingAs($user)->get(route('user.bookings.ticket', $createdBooking->booking_code));
+        $ticketResponse->assertStatus(200);
+        $ticketResponse->assertSee('<svg', false);
+
+        // Langkah 5: Staf scan QR / check-in di lokasi
+        $checkInResponse = $this->actingAs($staff)->postJson(route('staff.scan.check-in'), [
+            'qr_token' => $createdBooking->qr_token,
+        ]);
+        $checkInResponse->assertStatus(200);
+        $checkInResponse->assertJson(['success' => true]);
+        $this->assertEquals('checked_in', $createdBooking->fresh()->status);
+
+        // Langkah 6: Staf menandai booking 'complete' setelah kunjungan selesai
         $completeResponse = $this->actingAs($staff)->patch(route('staff.bookings.complete', $createdBooking));
         $completeResponse->assertRedirect();
         $this->assertEquals('completed', $createdBooking->fresh()->status);
 
-        // Langkah 5: User melihat tombol "Beri Ulasan" dan mengirim review
-        $userHistoryResponse = $this->actingAs($user)->get(route('user.bookings.index', ['tab' => 'history']));
-        $userHistoryResponse->assertStatus(200);
-        $userHistoryResponse->assertSee('Beri Ulasan');
-
+        // Langkah 7: User mengirim review untuk kunjungan selesai
         $reviewResponse = $this->actingAs($user)->post(route('user.bookings.review', $createdBooking), [
             'rating' => 5,
             'comment' => 'Pengalaman reservasi yang sangat memuaskan!',
