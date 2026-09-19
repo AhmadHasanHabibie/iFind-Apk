@@ -196,8 +196,17 @@ class BookingController extends Controller
 
         $booking->load(['store', 'slot']);
 
-        // Generate QR code SVG inline
-        $qrCodeSvg = QrCode::size(250)->generate($booking->qr_token);
+        // Generate QR code SVG inline safely
+        try {
+            if (class_exists(\SimpleSoftwareIO\QrCode\Facades\QrCode::class)) {
+                $qrCodeSvg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(250)->generate($booking->qr_token);
+            } else {
+                $qrCodeSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="250" height="250" viewBox="0 0 250 250"><rect width="250" height="250" fill="#f8fafc"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="12" fill="#475569">' . htmlspecialchars($booking->qr_token) . '</text></svg>';
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('QR Code generation fallback: ' . $e->getMessage());
+            $qrCodeSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="250" height="250" viewBox="0 0 250 250"><rect width="250" height="250" fill="#f8fafc"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="12" fill="#475569">' . htmlspecialchars($booking->qr_token) . '</text></svg>';
+        }
 
         return view('user.bookings.ticket', [
             'booking' => $booking,
