@@ -13,6 +13,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
+        [x-cloak] { display: none !important; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
 </head>
@@ -64,7 +65,7 @@
     </div>
 
     <!-- GLOBAL CUSTOM CONFIRMATION MODAL -->
-    <div x-show="confirmModal.open" x-cloak
+    <div x-show="confirmModal.open" x-cloak style="display: none;"
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
          @keydown.escape.window="confirmModal.open = false">
         <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4 transform transition-all"
@@ -147,7 +148,7 @@
                         <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 group-hover:text-slate-600 transition"></i>
                     </button>
 
-                    <div x-show="open" x-cloak
+                    <div x-show="open" x-cloak style="display: none;"
                          x-transition:enter="transition ease-out duration-100"
                          x-transition:enter-start="opacity-0 scale-95"
                          x-transition:enter-end="opacity-100 scale-100"

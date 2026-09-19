@@ -27,11 +27,11 @@
                 <button type="button"
                         @click="detectLocation()"
                         :disabled="locating"
-                        class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-2xl shadow-xl shadow-blue-600/25 hover:shadow-blue-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 text-base group">
-                    <span x-show="!locating">Cari Spot Terdekat</span>
+                        class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-2xl shadow-xl shadow-blue-600/25 hover:shadow-blue-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2.5 text-base group">
+                    <i class="fa-solid fa-location-crosshairs text-base" :class="{ 'animate-spin': locating }"></i>
+                    <span x-show="!locating">Lokasi Terdekat</span>
                     <span x-show="locating">Mencari Lokasi GPS...</span>
                     <i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform" x-show="!locating"></i>
-                    <i class="fa-solid fa-spinner fa-spin text-sm" x-show="locating"></i>
                 </button>
 
                 <a href="#spotList"
@@ -102,14 +102,27 @@
             <!-- Secondary Filter Chips -->
             <div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
                 <!-- Geolocation Button -->
-                <button type="button"
-                        @click="detectLocation()"
-                        :disabled="locating"
-                        class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl transition-all border font-bold shadow-xs hover:-translate-y-0.5"
-                        :class="hasLocation ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'">
-                    <i class="fa-solid fa-location-crosshairs text-blue-600" :class="{ 'animate-spin': locating }"></i>
-                    <span x-text="locationLabel"></span>
-                </button>
+                <div class="inline-flex items-center">
+                    <button type="button"
+                            @click="detectLocation()"
+                            :disabled="locating"
+                            class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl transition-all border font-bold shadow-xs hover:-translate-y-0.5"
+                            :class="hasLocation ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'"
+                            title="Klik untuk mencari toko dari jarak terdekat ke posisi Anda">
+                        <i class="fa-solid fa-location-crosshairs" :class="{ 'text-emerald-600': hasLocation, 'text-blue-600': !hasLocation, 'animate-spin': locating }"></i>
+                        <span x-text="locationLabel">{{ request()->filled('lat') ? 'Lokasi Terdekat Aktif' : 'Lokasi Terdekat' }}</span>
+                        <template x-if="hasLocation">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-0.5"></span>
+                        </template>
+                    </button>
+                    @if(request()->filled('lat') && request()->filled('lng'))
+                        <a href="{{ route('user.dashboard', request()->except(['lat', 'lng', 'radius'])) }}#spotList"
+                           class="ml-1 text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition"
+                           title="Hapus filter lokasi terdekat">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                        </a>
+                    @endif
+                </div>
 
                 <!-- Radius Filter -->
                 <div class="inline-flex items-center space-x-1.5 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 shadow-xs">
@@ -209,7 +222,7 @@ function userSearch() {
     return {
         locating: false,
         hasLocation: {{ request()->filled('lat') && request()->filled('lng') ? 'true' : 'false' }},
-        locationLabel: '{{ request()->filled('lat') ? "Lokasi Aktif" : "Gunakan Lokasi Saya" }}',
+        locationLabel: '{{ request()->filled('lat') ? "Lokasi Terdekat Aktif" : "Lokasi Terdekat" }}',
 
         detectLocation() {
             if (!navigator.geolocation) {
@@ -224,7 +237,7 @@ function userSearch() {
             }
 
             this.locating = true;
-            this.locationLabel = 'Mendeteksi koordinat...';
+            this.locationLabel = 'Mencari GPS...';
 
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -236,24 +249,26 @@ function userSearch() {
 
                     this.locating = false;
                     this.hasLocation = true;
-                    this.locationLabel = 'Lokasi Terdeteksi';
+                    this.locationLabel = 'Lokasi Terdekat Aktif';
 
                     window.dispatchEvent(new CustomEvent('custom-toast', {
                         detail: {
-                            title: 'Lokasi Aktif',
-                            message: 'Mengurutkan spot nongkrong berdasarkan jarak terdekat.',
+                            title: 'Lokasi Terdeteksi',
+                            message: 'Mengurutkan spot nongkrong dari yang paling dekat di urutan teratas.',
                             type: 'success'
                         }
                     }));
 
-                    // Submit form pencarian untuk refresh hasil berdasar jarak
+                    // Submit form pencarian untuk refresh hasil berdasar jarak terdekat
                     setTimeout(() => {
-                        document.getElementById('searchForm').submit();
-                    }, 400);
+                        const form = document.getElementById('searchForm');
+                        form.action = "{{ route('user.dashboard') }}#spotList";
+                        form.submit();
+                    }, 350);
                 },
                 (error) => {
                     this.locating = false;
-                    this.locationLabel = 'Gunakan Lokasi Saya';
+                    this.locationLabel = this.hasLocation ? 'Lokasi Terdekat Aktif' : 'Lokasi Terdekat';
                     console.warn('Geolocation error:', error.message);
 
                     window.dispatchEvent(new CustomEvent('custom-toast', {

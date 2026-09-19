@@ -340,7 +340,7 @@
     </div>
 
     <!-- CUSTOM BOOKING MODAL -->
-    <div x-show="modalOpen" x-cloak
+    <div x-show="modalOpen" x-cloak style="display: none;"
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
          @keydown.escape.window="modalOpen = false">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-5"

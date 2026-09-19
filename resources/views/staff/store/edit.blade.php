@@ -142,6 +142,7 @@
                                    name="latitude"
                                    value="{{ old('latitude', $store->latitude) }}"
                                    placeholder="-6.2000000"
+                                   oninput="updateMapsPreview()"
                                    class="w-full text-xs font-mono rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500">
                         </div>
                         <div>
@@ -152,8 +153,24 @@
                                    name="longitude"
                                    value="{{ old('longitude', $store->longitude) }}"
                                    placeholder="106.8166660"
+                                   oninput="updateMapsPreview()"
                                    class="w-full text-xs font-mono rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500">
                         </div>
+                    </div>
+
+                    <div class="sm:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-circle-info text-blue-500"></i>
+                            <span>Koordinat ini digunakan untuk mengurutkan toko Anda saat pelanggan mencari <strong>"Lokasi Terdekat"</strong>.</span>
+                        </div>
+                        <a id="preview-maps-link"
+                           href="{{ ($store->latitude && $store->longitude) ? 'https://www.google.com/maps?q=' . $store->latitude . ',' . $store->longitude : '#' }}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="{{ ($store->latitude && $store->longitude) ? 'inline-flex' : 'hidden' }} items-center space-x-1.5 font-bold text-blue-600 hover:text-blue-700 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs shrink-0">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            <span>Cek di Google Maps</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -228,6 +245,21 @@
 
 @push('scripts')
 <script>
+    function updateMapsPreview() {
+        const lat = document.getElementById('latitude').value.trim();
+        const lng = document.getElementById('longitude').value.trim();
+        const link = document.getElementById('preview-maps-link');
+        
+        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+            link.href = 'https://www.google.com/maps?q=' + encodeURIComponent(lat) + ',' + encodeURIComponent(lng);
+            link.classList.remove('hidden');
+            link.classList.add('inline-flex');
+        } else {
+            link.classList.add('hidden');
+            link.classList.remove('inline-flex');
+        }
+    }
+
     function detectLocation() {
         const btn = document.getElementById('btn-geolocation');
         if (!navigator.geolocation) {
@@ -235,17 +267,18 @@
             return;
         }
 
-        btn.innerHTML = 'Mendeteksi lokasi...';
+        btn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin mr-1 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Mendeteksi lokasi...';
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 document.getElementById('latitude').value = position.coords.latitude.toFixed(7);
                 document.getElementById('longitude').value = position.coords.longitude.toFixed(7);
-                btn.innerHTML = '<span class="text-emerald-600 font-bold">✓ Lokasi terpasang</span>';
+                btn.innerHTML = '<span class="text-emerald-600 font-bold">✓ Lokasi GPS Terpasang</span>';
+                updateMapsPreview();
             },
             (error) => {
                 alert('Gagal mengambil lokasi: ' + error.message);
-                btn.innerHTML = 'Gunakan Lokasi Saat Ini';
+                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><span>Gunakan Lokasi Saat Ini</span>';
             },
             { enableHighAccuracy: true, timeout: 10000 }
         );

@@ -1,5 +1,5 @@
 <!-- Review Modal Partial -->
-<div x-show="reviewModalOpen" x-cloak
+<div x-show="reviewModalOpen" x-cloak style="display: none;"
      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
      @keydown.escape.window="reviewModalOpen = false">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"

@@ -87,8 +87,33 @@ class PromptThreeUserModuleTest extends TestCase
         ]));
 
         $response->assertStatus(200);
-        // Memastikan distance_km terhitung dan tampil di kartu
-        $response->assertSee('km');
+        // Memastikan response view memuat daftar toko terurut dari yang terdekat
+        $stores = $response->viewData('stores');
+        $this->assertNotEmpty($stores);
+        $this->assertEquals('Titik Temu Coffee & Study Space', $stores->first()->name);
+
+        // Memastikan badge #1 Paling Dekat dan indikator jarak muncul
+        $response->assertSee('#1 Paling Dekat');
+    }
+
+    public function test_geolocation_different_city_orders_closest_store_first()
+    {
+        $user = User::where('role', 'user')->first();
+
+        // Koordinat sekitar Bandung (dekat Kolektif Space & Roastery)
+        $lat = -6.9175000;
+        $lng = 107.6191000;
+
+        $response = $this->actingAs($user)->get(route('user.dashboard', [
+            'lat' => $lat,
+            'lng' => $lng,
+        ]));
+
+        $response->assertStatus(200);
+        $stores = $response->viewData('stores');
+        $this->assertNotEmpty($stores);
+        $this->assertEquals('Kolektif Space & Roastery', $stores->first()->name);
+        $response->assertSee('#1 Paling Dekat');
     }
 
     public function test_store_show_page_and_ajax_slot_polling_with_estimated_available()

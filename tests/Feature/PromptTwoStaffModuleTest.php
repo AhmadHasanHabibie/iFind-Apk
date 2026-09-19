@@ -337,4 +337,35 @@ class PromptTwoStaffModuleTest extends TestCase
         $bookingConfirmResponse = $this->actingAs($staffA)->patch(route('staff.bookings.confirm', $bookingB));
         $bookingConfirmResponse->assertStatus(403);
     }
+
+    public function test_staff_can_update_store_location_coordinates()
+    {
+        $staff = User::where('email', 'arief.staff@ifind.id')->first();
+        $store = $staff->store;
+
+        $newLat = -6.2301234;
+        $newLng = 106.8601234;
+
+        $response = $this->actingAs($staff)->put(route('staff.store.update'), [
+            'name' => $store->name,
+            'category_id' => $store->category_id,
+            'description' => $store->description,
+            'address' => $store->address,
+            'city' => $store->city,
+            'latitude' => $newLat,
+            'longitude' => $newLng,
+            'phone' => $store->phone,
+            'price_per_pax' => $store->price_per_pax,
+            'bank_name' => $store->bank_name,
+            'bank_account_number' => $store->bank_account_number,
+            'bank_account_holder' => $store->bank_account_holder,
+        ]);
+
+        $response->assertRedirect(route('staff.store.edit'));
+        $this->assertDatabaseHas('stores', [
+            'id' => $store->id,
+            'latitude' => $newLat,
+            'longitude' => $newLng,
+        ]);
+    }
 }

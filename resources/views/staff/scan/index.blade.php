@@ -85,6 +85,7 @@
     <!-- Check-in Success Result Modal -->
     <div x-show="successModalOpen"
          x-cloak
+         style="display: none;"
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
          @keydown.escape.window="successModalOpen = false">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5"

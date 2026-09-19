@@ -385,6 +385,7 @@
     <!-- 2. Modal Preview Gambar Bukti Transfer -->
     <div x-show="previewModalOpen"
          x-cloak
+         style="display: none;"
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
          @keydown.escape.window="previewModalOpen = false">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4"
@@ -411,6 +412,7 @@
     <!-- 3. Modal Tandai Refund Selesai -->
     <div x-show="refundModalOpen"
          x-cloak
+         style="display: none;"
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
          @keydown.escape.window="refundModalOpen = false">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-4"

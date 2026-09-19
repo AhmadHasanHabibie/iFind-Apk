@@ -38,6 +38,14 @@
                 <span>Slot Hari Ini Ada</span>
             </span>
         @endif
+
+        <!-- Nearest Top Spot Badge -->
+        @if(isset($loop) && $loop->first && isset($store->distance_km) && $store->distance_km !== null)
+            <span class="absolute {{ $hasTodayAvailable ? 'top-11' : 'top-3.5' }} right-3.5 px-2.5 py-1 rounded-xl bg-blue-600/95 backdrop-blur-md text-white font-extrabold text-[10px] shadow-sm flex items-center space-x-1.5 border border-blue-400/40">
+                <i class="fa-solid fa-location-crosshairs text-[10px]"></i>
+                <span>#1 Paling Dekat</span>
+            </span>
+        @endif
     </div>
 
     <!-- Store Info Body -->
@@ -71,7 +79,13 @@
             @if(isset($store->distance_km) && $store->distance_km !== null)
                 <div class="flex items-center space-x-1 text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-lg text-[11px] border border-blue-100">
                     <i class="fa-solid fa-route text-[10px] text-blue-500"></i>
-                    <span>{{ number_format($store->distance_km, 1) }} km</span>
+                    <span>
+                        @if($store->distance_km < 1)
+                            {{ round($store->distance_km * 1000) }} m
+                        @else
+                            {{ number_format($store->distance_km, 1) }} km
+                        @endif
+                    </span>
                 </div>
             @endif
         </div>
