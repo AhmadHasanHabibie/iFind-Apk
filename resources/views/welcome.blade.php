@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>i-Find — Temukan Spot Nongkrong & Hangout Hemat Pelajar</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .hero-pattern {
+            background-image: radial-gradient(#3b82f6 0.75px, transparent 0.75px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
+
+    <!-- Subtle Animated Toast Notification -->
+    @if (session('success'))
+        <div id="toast-notification" 
+             class="fixed top-6 right-4 sm:right-6 z-[100] max-w-sm w-[calc(100%-2rem)] bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-3.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] flex items-center justify-between gap-3 transform -translate-y-6 opacity-0 transition-all duration-300 ease-out">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-slate-800 leading-tight">Berhasil</p>
+                    <p class="text-xs text-slate-500 truncate mt-0.5">{{ session('success') }}</p>
+                </div>
+            </div>
+            <button type="button" id="close-toast-btn" aria-label="Tutup Notifikasi" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const toast = document.getElementById('toast-notification');
+                const closeBtn = document.getElementById('close-toast-btn');
+                if (!toast) return;
+
+                // Animate in smoothly
+                setTimeout(() => {
+                    toast.classList.remove('-translate-y-6', 'opacity-0');
+                    toast.classList.add('translate-y-0', 'opacity-100');
+                }, 50);
+
+                function dismiss() {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('-translate-y-6', 'opacity-0');
+                    setTimeout(() => {
+                        if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+                    }, 350);
+                }
+
+                if (closeBtn) closeBtn.addEventListener('click', dismiss);
+                setTimeout(dismiss, 3500); // Auto dismiss after 3.5 seconds
+            });
+        </script>
+    @endif
+
+    <!-- NAVBAR -->
+    <header class="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-slate-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-xl shadow-md shadow-blue-500/20 text-white">i</div>
+                <span class="text-2xl font-extrabold tracking-tight text-slate-900">i-Find</span>
+                <span class="text-[10px] uppercase tracking-wider bg-blue-50 border border-blue-200 text-blue-600 font-bold px-2.5 py-1 rounded-full">Student Ver.</span>
+            </div>
+            
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-600">
+                <a href="#spot-tersedia" class="hover:text-blue-600 transition font-semibold">Spot Nongkrong</a>
+                <a href="#fitur" class="hover:text-blue-600 transition">Fitur Utama</a>
+                <a href="#kategori" class="hover:text-blue-600 transition">Kategori Spot</a>
+                <a href="#keunggulan" class="hover:text-blue-600 transition">Keunggulan LBS</a>
+            </nav>
+
+            @auth
+                <div class="flex items-center space-x-3">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-sm font-bold text-slate-800 leading-tight">{{ Auth::user()->name }}</p>
+                        <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full {{ Auth::user()->role === 'admin' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
+                            {{ ucfirst(Auth::user()->role) }}
+                        </span>
+                    </div>
+                    <a href="{{ route('dashboard') }}" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-blue-600/20 transition-all">
+                        Buka Dashboard
+                    </a>
+                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all">
+                            Keluar
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div class="flex items-center space-x-4">
+                    <a href="{{ route('login') }}" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Masuk</a>
+                    <a href="{{ route('register') }}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-0.5">
+                        Mulai Jelajah
+                    </a>
+                </div>
+            @endauth
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="relative pt-20 pb-32 overflow-hidden z-10 hero-pattern bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            
+            <!-- Badge -->
+            <div class="inline-flex items-center gap-2 py-1.5 px-4 rounded-full text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-700 mb-8 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                Platform Reservasi & LBS Khusus Pelajar #1
+            </div>
+
+            <!-- Heading -->
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 max-w-4xl mx-auto leading-[1.15]">
+                Tempat Kumpul Spot Hemat dan <span class="text-blue-600">Hangout</span> Terbaik
+            </h1>
+
+            <!-- Subtitle -->
+            <p class="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                Rekomendasi tempat nongkrong yang pas di kantong siswa. Temukan spot terdekat menggunakan teknologi GPS akurat dan booking meja instan tanpa ribet.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#spot-tersedia" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-2xl shadow-xl shadow-blue-600/25 transition-all flex items-center justify-center gap-2 text-base group">
+                    Cari Spot Terdekat 
+                    <span class="group-hover:translate-x-1 transition-transform">→</span>
+                </a>
+                <a href="#kategori" class="bg-white hover:bg-slate-50 text-slate-700 font-semibold px-8 py-4 rounded-2xl border border-slate-200 transition-all text-base flex items-center justify-center shadow-sm">
+                    Jelajahi Hangout Pedia
+                </a>
+            </div>
+
+            <!-- Floating Stats Card Preview -->
+            <div class="mt-16 max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-3xl bg-white border border-slate-200 shadow-xl shadow-slate-200/50">
+                <div class="text-left p-4">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Akurasi GPS</p>
+                    <p class="text-2xl font-black text-blue-600 mt-1">Real-Time</p>
+                </div>
+                <div class="text-left p-4 border-l border-slate-100">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Budget Pelajar</p>
+                    <p class="text-2xl font-black text-emerald-600 mt-1">&lt; Rp 25rb</p>
+                </div>
+                <div class="text-left p-4 border-l border-slate-100">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Fitur Booking</p>
+                    <p class="text-2xl font-black text-indigo-600 mt-1">Instant</p>
+                </div>
+                <div class="text-left p-4 border-l border-slate-100">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Panduan Lokasi</p>
+                    <p class="text-2xl font-black text-sky-600 mt-1">Hangout Pedia</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- SPOT TERSEDIA SECTION (CARD TOKO DENGAN REDIRECT LOGIN) -->
+    <section id="spot-tersedia" class="py-24 bg-slate-50 border-t border-slate-200 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-4">
+                <div>
+                    <div class="inline-flex items-center gap-2 py-1 px-3.5 rounded-full text-xs font-bold bg-blue-50 border border-blue-200 text-blue-700 mb-3 shadow-2xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Spot Terverifikasi & Siap Dibooking
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
+                        Spot Nongkrong &amp; Nugas <span class="text-blue-600">Tersedia</span>
+                    </h2>
+                    <p class="text-slate-500 text-sm mt-2 max-w-xl leading-relaxed">
+                        Pilihan tempat hangout, warkop, dan cafe favorit pelajar. Klik kartu spot manapun untuk langsung masuk dan reservasi mejamu!
+                    </p>
+                </div>
+
+                <a href="{{ route('login') }}" class="inline-flex items-center space-x-2 text-sm font-bold text-blue-600 hover:text-blue-700 px-5 py-2.5 rounded-xl bg-blue-50/80 hover:bg-blue-100 border border-blue-200 transition shadow-2xs self-start md:self-auto">
+                    <span>Masuk untuk Reservasi</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            @if(isset($stores) && $stores->count() > 0)
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+                    @foreach($stores as $store)
+                        @php
+                            $primaryPhoto = $store->photos->firstWhere('is_primary', true) ?? $store->photos->first();
+                            $photoUrl = $primaryPhoto ? asset('storage/' . $primaryPhoto->photo_path) : null;
+                            $hasTodayAvailable = $store->slots->where('date', today())->where('status', 'available')->count() > 0;
+                        @endphp
+                        <a href="{{ route('login') }}"
+                           class="group flex flex-col bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-2xl hover:border-blue-400 hover:-translate-y-2 active:translate-y-0 transition-all duration-300 overflow-hidden cursor-pointer"
+                           title="Klik untuk Masuk & Reservasi di {{ $store->name }}">
+                            <!-- Image Container -->
+                            <div class="relative w-full h-56 bg-slate-100 overflow-hidden flex items-center justify-center">
+                                @if($photoUrl)
+                                    <img src="{{ $photoUrl }}"
+                                         alt="{{ $store->name }}"
+                                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div style="display: none;" class="w-full h-full bg-gradient-to-tr from-blue-600/10 to-indigo-600/20 items-center justify-center text-slate-400">
+                                        <i class="fa-solid fa-store text-4xl text-slate-300"></i>
+                                    </div>
+                                @else
+                                    <div class="w-full h-full bg-gradient-to-tr from-blue-600/10 to-indigo-600/20 flex items-center justify-center text-slate-400">
+                                        <i class="fa-solid fa-store text-4xl text-slate-300"></i>
+                                    </div>
+                                @endif
+
+                                <!-- Gradient Overlay -->
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+
+                                <!-- Category Tag -->
+                                <span class="absolute top-3.5 left-3.5 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md text-slate-800 font-extrabold text-[11px] shadow-sm flex items-center space-x-1.5 border border-white/40">
+                                    <i class="{{ $store->category->icon ?? 'fa-solid fa-tag' }} text-blue-600 text-xs"></i>
+                                    <span>{{ $store->category->name ?? 'Tempat' }}</span>
+                                </span>
+
+                                <!-- Slot Status Badge -->
+                                @if($hasTodayAvailable)
+                                    <span class="absolute top-3.5 right-3.5 px-2.5 py-1 rounded-xl bg-emerald-500/95 backdrop-blur-md text-white font-extrabold text-[10px] shadow-sm flex items-center space-x-1.5 border border-emerald-400/40">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                                        <span>Slot Hari Ini Ada</span>
+                                    </span>
+                                @endif
+
+                                <!-- Login to Book Hover Prompt -->
+                                <div class="absolute inset-x-0 bottom-0 p-3 bg-slate-900/80 backdrop-blur-sm transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center justify-between text-white text-xs font-bold">
+                                    <span>Klik untuk Masuk & Reservasi Meja</span>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+                            </div>
+
+                            <!-- Content Body -->
+                            <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
+                                <div>
+                                    <div class="flex items-start justify-between gap-2">
+                                        <h3 class="font-black text-slate-900 group-hover:text-blue-600 transition-colors duration-200 line-clamp-1 text-lg leading-snug">
+                                            {{ $store->name }}
+                                        </h3>
+                                        <!-- Rating -->
+                                        <div class="flex items-center space-x-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/80 shrink-0">
+                                            <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                                            <span class="text-xs font-black text-amber-900">{{ number_format($store->average_rating, 1) }}</span>
+                                            <span class="text-[10px] text-amber-700 font-semibold">({{ $store->reviews_count }})</span>
+                                        </div>
+                                    </div>
+
+                                    <p class="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+                                        {{ $store->description }}
+                                    </p>
+                                </div>
+
+                                <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                                    <!-- City Location -->
+                                    <div class="flex items-center space-x-1.5 text-slate-600 font-medium">
+                                        <i class="fa-solid fa-location-dot text-blue-500 text-xs"></i>
+                                        <span class="truncate max-w-[150px]">{{ $store->city }}</span>
+                                    </div>
+
+                                    <!-- Prompt -->
+                                    <span class="inline-flex items-center space-x-1 font-bold text-blue-600 group-hover:text-blue-700 group-hover:translate-x-0.5 transition-all">
+                                        <span>Reservasi Meja</span>
+                                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+
+                <div class="mt-14 text-center">
+                    <div class="inline-flex flex-col sm:flex-row items-center gap-4 p-5 rounded-3xl bg-white border border-slate-200 shadow-sm">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-shield-heart text-base"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-xs font-bold text-slate-900">Ingin melihat spot nongkrong lainnya di kotamu?</p>
+                                <p class="text-[11px] text-slate-500">Masuk atau daftarkan akun iFind gratis untuk eksplorasi lengkap</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <a href="{{ route('login') }}" class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition">
+                                Masuk Akun
+                            </a>
+                            <a href="{{ route('register') }}" class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+                                Daftar Gratis
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+    </section>
+
+    <!-- FITUR UTAMA SECTION -->
+    <section id="fitur" class="py-24 bg-white border-t border-slate-200 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <h2 class="text-xs font-bold tracking-widest text-blue-600 uppercase mb-3">Fitur Unggulan Sistem</h2>
+                <h3 class="text-3xl sm:text-4xl font-extrabold text-slate-900">Dirancang Khusus untuk Kebutuhan Nongkrongmu</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                
+                <!-- Card 1 -->
+                <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300 group">
+                    <div class="w-14 h-14 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">📍</div>
+                    <h4 class="text-lg font-bold text-slate-900 mb-2">GPS Pencarian Spot</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">Temukan spot ngumpul terdekat dari posisimu saat ini dengan navigasi peta yang interaktif.</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-300 transition-all duration-300 group">
+                    <div class="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-6 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all">🎟️</div>
+                    <h4 class="text-lg font-bold text-slate-900 mb-2">Pemesanan Tempat</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">Booking meja atau area kumpul bareng teman sekolah jadi lebih gampang, aman, dan anti kehabisan.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-300 transition-all duration-300 group">
+                    <div class="w-14 h-14 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-6 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all">📖</div>
+                    <h4 class="text-lg font-bold text-slate-900 mb-2">Hangout Pedia</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">Panduan lengkap berbagai tempat nongkrong ramah budget, fasilitas Wi-Fi cepat, dan colokan listrik.</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-sky-300 transition-all duration-300 group">
+                    <div class="w-14 h-14 bg-sky-50 border border-sky-100 text-sky-600 rounded-2xl flex items-center justify-center font-bold text-2xl mb-6 group-hover:scale-110 group-hover:bg-sky-600 group-hover:text-white transition-all">🎯</div>
+                    <h4 class="text-lg font-bold text-slate-900 mb-2">Akurasi GPS Spasial</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">Perhitungan jarak divalidasi presisi dengan posisi terdekat menggunakan formula geolokasi handal.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- KATEGORI SECTION -->
+    <section id="kategori" class="py-24 bg-white border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-16">
+                <div>
+                    <h2 class="text-xs font-bold tracking-widest text-blue-600 uppercase mb-3">Kategori Pilihan</h2>
+                    <h3 class="text-3xl font-extrabold text-slate-900">Spot Favorit Anak Sekolah</h3>
+                </div>
+                <p class="text-slate-600 text-sm max-w-sm mt-4 md:mt-0">Semua tempat direkomendasikan khusus berdasarkan kriteria kantong pelajar dan kenyamanan nugas kelompok.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="relative group overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-8 flex flex-col justify-between h-72 shadow-sm hover:shadow-md transition">
+                    <div class="flex justify-between items-start">
+                        <span class="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-full border border-blue-200">Super Hemat</span>
+                        <span class="text-2xl">☕</span>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold text-slate-900 mb-1">Warkop & Cafe Mini</h4>
+                        <p class="text-sm text-slate-600">Kisaran harga mulai Rp 10.000-an, lengkap dengan fasilitas colokan dan kopi santai.</p>
+                    </div>
+                </div>
+
+                <div class="relative group overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-8 flex flex-col justify-between h-72 shadow-sm hover:shadow-md transition">
+                    <div class="flex justify-between items-start">
+                        <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-full border border-indigo-200">Nyaman & Tenang</span>
+                        <span class="text-2xl">📚</span>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold text-slate-900 mb-1">Spot Nugas & Diskusi</h4>
+                        <p class="text-sm text-slate-600">Tempat kumpul yang kondusif buat ngerjain tugas kelompok, kerja bakti, atau belajar bareng.</p>
+                    </div>
+                </div>
+
+                <div class="relative group overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-8 flex flex-col justify-between h-72 shadow-sm hover:shadow-md transition">
+                    <div class="flex justify-between items-start">
+                        <span class="bg-sky-100 text-sky-700 text-xs font-bold px-3 py-1.5 rounded-full border border-sky-200">Seru & Ramai</span>
+                        <span class="text-2xl">🎯</span>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold text-slate-900 mb-1">Tempat Main & Hangout</h4>
+                        <p class="text-sm text-slate-600">Pilihan spot santai buat lepas penat setelah jam sekolah selesai bersama geng sekolahmu.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow">i</div>
+                <span class="text-lg font-bold text-white">i-Find</span>
+                <span class="text-xs text-slate-500">— Student Hangout & Booking Platform</span>
+            </div>
+            <p class="text-sm text-slate-400">&copy; 2026 i-Find. Dibangun dengan Laravel & Tailwind CSS.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
