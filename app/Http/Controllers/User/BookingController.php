@@ -94,6 +94,7 @@ class BookingController extends Controller
             $bookingCode = 'IFD-' . Carbon::now()->format('Ymd') . '-' . strtoupper(Str::random(5));
         } while (Booking::where('booking_code', $bookingCode)->exists());
 
+<<<<<<< HEAD
         try {
             $booking = DB::transaction(function () use ($request, $store, $seatCount, $bookingCode, $pricePerPax, $dpPercentage, $totalAmount, $amountDue, $deadline) {
                 // Kunci baris slot (pessimistic lock) agar kebal dari race condition
@@ -135,6 +136,31 @@ class BookingController extends Controller
         } catch (\RuntimeException $e) {
             return back()->withErrors(['seat_count' => $e->getMessage()])->withInput();
         }
+=======
+        $booking = DB::transaction(function () use ($request, $store, $slot, $seatCount, $bookingCode, $pricePerPax, $dpPercentage, $totalAmount, $amountDue, $deadline) {
+            $createdBooking = Booking::create([
+                'booking_code' => $bookingCode,
+                'user_id' => $request->user()->id,
+                'store_id' => $store->id,
+                'slot_id' => $slot->id,
+                'booking_date' => $slot->date,
+                'seat_count' => $seatCount,
+                'status' => 'awaiting_payment',
+                'notes' => $request->notes,
+                'price_per_pax_snapshot' => $pricePerPax,
+                'dp_percentage_snapshot' => $dpPercentage,
+                'total_amount' => $totalAmount,
+                'amount_due' => $amountDue,
+                'payment_deadline' => $deadline,
+            ]);
+
+            // Tahan kapasitas sejak awal booking dibuat
+            $slot->booked_seats += $seatCount;
+            $slot->save(); // Trigger SlotObserver otomatis
+
+            return $createdBooking;
+        });
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
 
         return redirect()->route('user.bookings.payment', $booking->booking_code)
             ->with('success', 'Reservasi berhasil dibuat. Silakan selesaikan pembayaran sesuai instruksi.');

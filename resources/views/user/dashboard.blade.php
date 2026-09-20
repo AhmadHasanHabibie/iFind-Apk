@@ -147,6 +147,7 @@
                     </select>
                 </div>
 
+<<<<<<< HEAD
                 <!-- Facility Filter Dropdown -->
                 <div class="relative" x-data="{ openFac: false }" @click.outside="openFac = false">
                     <button type="button" @click="openFac = !openFac"
@@ -191,6 +192,9 @@
                 </div>
 
                 @if(request()->hasAny(['keyword', 'category_id', 'min_rating', 'radius', 'lat', 'facilities']))
+=======
+                @if(request()->hasAny(['keyword', 'category_id', 'min_rating', 'radius', 'lat']))
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
                     <a href="{{ route('user.dashboard') }}" class="text-blue-600 hover:text-blue-800 font-bold px-3 py-1.5 rounded-xl hover:bg-blue-50 transition ml-auto">
                         <i class="fa-solid fa-rotate-left mr-1"></i> Reset Filter
                     </a>

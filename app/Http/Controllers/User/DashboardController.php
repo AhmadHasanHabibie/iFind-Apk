@@ -4,7 +4,10 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+<<<<<<< HEAD
 use App\Models\Facility;
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,7 +17,10 @@ class DashboardController extends Controller
     public function index(Request $request): View
     {
         $categories = Category::where('is_active', true)->orderBy('name')->get();
+<<<<<<< HEAD
         $facilities = Facility::orderBy('name')->get();
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
 
         $query = Store::visible()
             ->with(['category', 'photos', 'facilities'])
@@ -36,6 +42,7 @@ class DashboardController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
+<<<<<<< HEAD
         // Filter Fasilitas (Checkbox multiple)
         if ($request->filled('facilities') && is_array($request->facilities)) {
             foreach ($request->facilities as $facilityId) {
@@ -47,6 +54,8 @@ class DashboardController extends Controller
             }
         }
 
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
         // Filter Rating Minimum
         if ($request->filled('min_rating')) {
             $query->where('average_rating', '>=', (float) $request->min_rating);
@@ -83,9 +92,15 @@ class DashboardController extends Controller
         return view('user.dashboard', [
             'stores' => $stores,
             'categories' => $categories,
+<<<<<<< HEAD
             'facilities' => $facilities,
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
             'hasLocation' => $hasLocation,
         ]);
     }
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
