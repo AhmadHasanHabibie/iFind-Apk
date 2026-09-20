@@ -172,7 +172,11 @@
                        class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('staff.chat.*') ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                         <div class="flex items-center space-x-3">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+<<<<<<< HEAD
+                            <span>Chat Pelanggan</span>
+=======
                             <span>Chat</span>
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
                         </div>
                         @if($unreadChatCount > 0)
                             <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-rose-500 text-white shadow-sm">{{ $unreadChatCount }}</span>
@@ -182,11 +186,27 @@
                     <div title="Lengkapi profil toko dulu" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-500 bg-slate-800/30 cursor-not-allowed select-none">
                         <div class="flex items-center space-x-3 opacity-60">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+<<<<<<< HEAD
+                            <span>Chat Pelanggan</span>
+=======
                             <span>Chat</span>
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
                         </div>
                         <span class="text-[10px] font-bold text-slate-400">Terkunci</span>
                     </div>
                 @endif
+<<<<<<< HEAD
+
+                <!-- Tiket Bantuan ke Admin -->
+                <a href="{{ route('staff.tickets.index') }}"
+                   class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('staff.tickets.*') ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        <span>Tiket Bantuan</span>
+                    </div>
+                </a>
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
             </div>
 
             <!-- User Footer -->

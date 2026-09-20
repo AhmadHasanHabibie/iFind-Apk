@@ -2,21 +2,48 @@
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
+<<<<<<< HEAD
+use App\Http\Controllers\Admin\FacilityController;
+use App\Http\Controllers\Admin\StaffVerificationController;
+use App\Http\Controllers\Admin\StoreController;
+use App\Http\Controllers\Admin\TicketController;
+use App\Http\Controllers\Admin\UserController;
+=======
 use App\Http\Controllers\Admin\StaffVerificationController;
 use App\Http\Controllers\Admin\TicketController;
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+<<<<<<< HEAD
+    // Manajemen Toko & Pengguna
+    Route::get('/stores', [StoreController::class, 'index'])->name('stores.index');
+    Route::get('/stores/{store}', [StoreController::class, 'show'])->name('stores.show');
+    Route::patch('/stores/{store}/toggle-active', [StoreController::class, 'toggleActive'])->name('stores.toggle-active');
+    Route::patch('/stores/{store}/approve', [StoreController::class, 'approve'])->name('stores.approve');
+    Route::patch('/stores/{store}/reject', [StoreController::class, 'reject'])->name('stores.reject');
+
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active');
+
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
     // Staff Verification
     Route::get('/staff-verification', [StaffVerificationController::class, 'index'])->name('staff-verification.index');
     Route::get('/staff-verification/{user}', [StaffVerificationController::class, 'show'])->name('staff-verification.show');
     Route::post('/staff-verification/{user}/approve', [StaffVerificationController::class, 'approve'])->name('staff-verification.approve');
     Route::post('/staff-verification/{user}/reject', [StaffVerificationController::class, 'reject'])->name('staff-verification.reject');
 
+<<<<<<< HEAD
+    // Categories & Facilities CRUD
+    Route::resource('categories', CategoryController::class);
+    Route::resource('facilities', FacilityController::class);
+=======
     // Categories CRUD
     Route::resource('categories', CategoryController::class);
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
 
     // Tickets
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
@@ -31,3 +58,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/chat/{conversation}/poll', [\App\Http\Controllers\Admin\ChatController::class, 'poll'])->name('chat.poll');
     Route::post('/chat/start/{staff}', [\App\Http\Controllers\Admin\ChatController::class, 'start'])->name('chat.start');
 });
+<<<<<<< HEAD
+
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d

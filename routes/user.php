@@ -5,6 +5,10 @@ use App\Http\Controllers\User\ChatController;
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\ReviewController;
 use App\Http\Controllers\User\StoreController;
+<<<<<<< HEAD
+use App\Http\Controllers\User\TicketController;
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
@@ -21,9 +25,23 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
 
     Route::post('/bookings/{booking}/review', [ReviewController::class, 'store'])->name('bookings.review');
 
+<<<<<<< HEAD
+    // Pusat Bantuan / Tiket
+    Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
+    Route::get('/tickets/create', [TicketController::class, 'create'])->name('tickets.create');
+    Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
+    Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+    Route::post('/tickets/{ticket}/reply', [TicketController::class, 'reply'])->name('tickets.reply');
+
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
     Route::post('/chat/start/{store:slug}', [ChatController::class, 'start'])->name('chat.start');
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
     Route::post('/chat/{conversation}/send', [ChatController::class, 'send'])->name('chat.send');
     Route::get('/chat/{conversation}/poll', [ChatController::class, 'poll'])->name('chat.poll');
 });
+<<<<<<< HEAD
+
+=======
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d

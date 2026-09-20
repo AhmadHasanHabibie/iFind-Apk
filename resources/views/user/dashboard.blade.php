@@ -147,7 +147,54 @@
                     </select>
                 </div>
 
+<<<<<<< HEAD
+                <!-- Facility Filter Dropdown -->
+                <div class="relative" x-data="{ openFac: false }" @click.outside="openFac = false">
+                    <button type="button" @click="openFac = !openFac"
+                            class="inline-flex items-center space-x-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl px-3 py-1.5 text-slate-700 shadow-xs font-bold transition">
+                        <i class="fa-solid fa-layer-group text-teal-600 text-xs"></i>
+                        <span>Fasilitas</span>
+                        @php
+                            $selectedFacCount = is_array(request('facilities')) ? count(request('facilities')) : 0;
+                        @endphp
+                        @if($selectedFacCount > 0)
+                            <span class="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center">{{ $selectedFacCount }}</span>
+                        @endif
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 ml-0.5"></i>
+                    </button>
+
+                    <div x-show="openFac" x-cloak style="display: none;"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute left-0 mt-2 w-64 p-3 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 space-y-2">
+                        <p class="text-xs font-bold text-slate-900 border-b border-slate-100 pb-1.5">Pilih Fasilitas</p>
+                        <div class="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                            @foreach($facilities as $facility)
+                                <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 p-1.5 rounded-lg cursor-pointer transition">
+                                    <input type="checkbox" name="facilities[]" value="{{ $facility->id }}"
+                                           {{ is_array(request('facilities')) && in_array($facility->id, request('facilities')) ? 'checked' : '' }}
+                                           class="rounded-md border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <i class="{{ $facility->icon }} text-slate-400 text-xs"></i>
+                                    <span class="truncate">{{ $facility->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <div class="pt-2 border-t border-slate-100 flex justify-end">
+                            <button type="submit" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition">
+                                Terapkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                @if(request()->hasAny(['keyword', 'category_id', 'min_rating', 'radius', 'lat', 'facilities']))
+=======
                 @if(request()->hasAny(['keyword', 'category_id', 'min_rating', 'radius', 'lat']))
+>>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
                     <a href="{{ route('user.dashboard') }}" class="text-blue-600 hover:text-blue-800 font-bold px-3 py-1.5 rounded-xl hover:bg-blue-50 transition ml-auto">
                         <i class="fa-solid fa-rotate-left mr-1"></i> Reset Filter
                     </a>
