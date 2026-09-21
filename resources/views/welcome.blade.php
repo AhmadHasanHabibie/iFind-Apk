@@ -404,6 +404,6 @@
             <p class="text-sm text-slate-400">&copy; 2026 i-Find. Dibangun dengan Laravel & Tailwind CSS.</p>
         </div>
     </footer>
-
+    <x-sweetalert-notifications />
 </body>
 </html>

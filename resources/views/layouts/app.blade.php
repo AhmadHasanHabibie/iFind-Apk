@@ -35,5 +35,6 @@
                 {{ $slot }}
             </main>
         </div>
+        <x-sweetalert-notifications />
     </body>
 </html>

@@ -243,10 +243,17 @@
                     } else {
                         // Jika gagal, kembalikan teks pesan agar user tidak kehilangan input
                         this.messageInput = text;
-                        alert('Gagal mengirim pesan. Silakan coba lagi.');
+                        if (window.toastError) {
+                            window.toastError('Gagal mengirim pesan. Silakan coba lagi.');
+                        } else {
+                            alert('Gagal mengirim pesan. Silakan coba lagi.');
+                        }
                     }
                 } catch (err) {
                     this.messageInput = text;
+                    if (window.toastError) {
+                        window.toastError('Terjadi kesalahan jaringan saat mengirim pesan.');
+                    }
                     console.error('Send error:', err);
                 } finally {
                     this.isSending = false;

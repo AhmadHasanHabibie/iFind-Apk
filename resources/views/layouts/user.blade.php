@@ -287,6 +287,7 @@
         }
     }
     </script>
+    <x-sweetalert-notifications />
     @stack('scripts')
 </body>
 </html>

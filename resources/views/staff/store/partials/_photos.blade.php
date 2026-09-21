@@ -45,9 +45,9 @@
                             @endif
 
                             <button type="button"
-                                    onclick="if(confirm('Hapus foto ini?')) document.getElementById('delete-photo-form-{{ $photo->id }}').submit()"
+                                    onclick="confirmAction('Apakah Anda yakin ingin menghapus foto toko ini?', () => document.getElementById('delete-photo-form-{{ $photo->id }}').submit(), 'Hapus Foto Toko', 'Ya, Hapus', 'danger')"
                                     title="Hapus Foto"
-                                    class="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition text-xs font-semibold">
+                                    class="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition text-xs font-semibold cursor-pointer">
                                 Hapus
                             </button>
                         </div>

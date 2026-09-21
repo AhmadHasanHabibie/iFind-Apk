@@ -121,7 +121,7 @@
                                 <td class="py-4 px-6 text-right">
                                     @if($user->id !== auth()->id())
                                         <form method="POST" action="{{ route('admin.users.toggle-active', $user) }}"
-                                              onsubmit="return confirm('Apakah Anda yakin ingin mengubah status akun {{ $user->name }}?')">
+                                              data-confirm="Apakah Anda yakin ingin mengubah status akun {{ $user->name }}?" data-confirm-title="Ubah Status Akun" data-confirm-btn="Ya, Lanjutkan">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit"

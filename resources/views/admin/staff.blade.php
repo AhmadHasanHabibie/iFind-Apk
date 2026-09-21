@@ -375,7 +375,7 @@
                                                 </span>
                                             </td>
                                             <td class="py-3.5 px-3 text-right">
-                                                <form action="{{ route('admin.staff.destroy', $staff->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun staf {{ $staff->name }}?');" class="inline">
+                                                <form action="{{ route('admin.staff.destroy', $staff->id) }}" method="POST" data-confirm="Apakah Anda yakin ingin menghapus akun staf {{ $staff->name }}?" data-confirm-title="Hapus Akun Staf" data-confirm-btn="Ya, Hapus" data-confirm-danger="true" class="inline">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition" title="Hapus Staf">
@@ -435,5 +435,6 @@
             });
         }
     </script>
+    <x-sweetalert-notifications />
 </body>
 </html>

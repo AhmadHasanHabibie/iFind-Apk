@@ -60,7 +60,10 @@
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
                                         <form method="POST" action="{{ route('admin.facilities.destroy', $facility) }}"
-                                              onsubmit="return confirm('Apakah Anda yakin ingin menghapus fasilitas {{ $facility->name }}?')">
+                                              data-confirm="Apakah Anda yakin ingin menghapus fasilitas '{{ $facility->name }}'?"
+                                              data-confirm-title="Hapus Fasilitas"
+                                              data-confirm-btn="Ya, Hapus"
+                                              data-confirm-danger="true">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition" title="Hapus">

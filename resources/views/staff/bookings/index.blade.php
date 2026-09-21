@@ -309,7 +309,7 @@
                                 @if($statusTab === 'remaining')
                                     <div class="inline-flex items-center space-x-2">
                                         <!-- Tombol Terima Pelunasan -->
-                                        <form method="POST" action="{{ route('staff.bookings.confirm-remaining', $booking) }}" onsubmit="return confirm('Terima bukti pelunasan booking #{{ $booking->booking_code }} sebesar Rp {{ number_format($booking->remaining_amount, 0, ',', '.') }}?')">
+                                        <form method="POST" action="{{ route('staff.bookings.confirm-remaining', $booking) }}" data-confirm="Terima bukti pelunasan booking #{{ $booking->booking_code }} sebesar Rp {{ number_format($booking->remaining_amount, 0, ',', '.') }}?" data-confirm-title="Terima Pelunasan" data-confirm-btn="Ya, Terima">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition shadow-sm">
@@ -327,7 +327,7 @@
                                 @elseif($booking->status === 'pending_verification')
                                     <div class="inline-flex items-center space-x-2">
                                         <!-- Tombol Terima (Konfirmasi) -->
-                                        <form method="POST" action="{{ route('staff.bookings.confirm', $booking) }}" onsubmit="return confirm('Terima pembayaran dan konfirmasi booking #{{ $booking->booking_code }}?')">
+                                        <form method="POST" action="{{ route('staff.bookings.confirm', $booking) }}" data-confirm="Terima pembayaran dan konfirmasi booking #{{ $booking->booking_code }}?" data-confirm-title="Konfirmasi Reservasi" data-confirm-btn="Ya, Konfirmasi">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition shadow-sm">
@@ -354,7 +354,7 @@
 
                                         <!-- Tandai Selesai (HANYA AKTIF DARI CHECKED_IN DAN JIKA LUNAS) -->
                                         @if(in_array($booking->remaining_payment_status, ['not_required', 'paid']))
-                                            <form method="POST" action="{{ route('staff.bookings.complete', $booking) }}" onsubmit="return confirm('Tandai kunjungan booking #{{ $booking->booking_code }} telah selesai?')">
+                                            <form method="POST" action="{{ route('staff.bookings.complete', $booking) }}" data-confirm="Tandai kunjungan booking #{{ $booking->booking_code }} telah selesai?" data-confirm-title="Selesaikan Kunjungan" data-confirm-btn="Ya, Selesai">
                                                 @csrf
                                                 @method('PATCH')
                                                 <button type="submit" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition shadow-sm">

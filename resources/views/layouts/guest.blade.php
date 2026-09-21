@@ -46,5 +46,6 @@
                 </a>
             </div>
         </div>
+        <x-sweetalert-notifications />
     </body>
 </html>

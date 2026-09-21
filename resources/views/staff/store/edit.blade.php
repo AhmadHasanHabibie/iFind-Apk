@@ -263,7 +263,11 @@
     function detectLocation() {
         const btn = document.getElementById('btn-geolocation');
         if (!navigator.geolocation) {
-            alert('Geolocation tidak didukung oleh browser Anda.');
+            if (window.toastWarning) {
+                window.toastWarning('Geolocation tidak didukung oleh browser Anda.');
+            } else {
+                alert('Geolocation tidak didukung oleh browser Anda.');
+            }
             return;
         }
 
@@ -274,10 +278,17 @@
                 document.getElementById('latitude').value = position.coords.latitude.toFixed(7);
                 document.getElementById('longitude').value = position.coords.longitude.toFixed(7);
                 btn.innerHTML = '<span class="text-emerald-600 font-bold">✓ Lokasi GPS Terpasang</span>';
+                if (window.toastSuccess) {
+                    window.toastSuccess('Lokasi GPS berhasil didapatkan.');
+                }
                 updateMapsPreview();
             },
             (error) => {
-                alert('Gagal mengambil lokasi: ' + error.message);
+                if (window.toastError) {
+                    window.toastError('Gagal mengambil lokasi: ' + error.message);
+                } else {
+                    alert('Gagal mengambil lokasi: ' + error.message);
+                }
                 btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><span>Gunakan Lokasi Saat Ini</span>';
             },
             { enableHighAccuracy: true, timeout: 10000 }
