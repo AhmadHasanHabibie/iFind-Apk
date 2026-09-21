@@ -190,23 +190,27 @@
     </main>
 
     <!-- Mobile Bottom Navigation Bar -->
-    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 px-2 py-1 flex items-center justify-around shadow-lg">
-        <a href="{{ route('user.dashboard') }}" class="flex flex-col items-center py-1.5 px-3 text-[10px] font-bold {{ request()->routeIs('user.dashboard*') && !request()->routeIs('user.stores.*') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900' }}">
+    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 px-1 py-1 flex items-center justify-around shadow-lg">
+        <a href="{{ route('user.dashboard') }}" class="flex flex-col items-center py-1 px-2 text-[10px] font-bold {{ request()->routeIs('user.dashboard*') && !request()->routeIs('user.stores.*') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900' }}">
             <i class="fa-solid fa-compass text-base mb-0.5"></i>
             <span>Beranda</span>
         </a>
-        <a href="{{ route('user.bookings.index') }}" class="flex flex-col items-center py-1.5 px-3 text-[10px] font-bold {{ request()->routeIs('user.bookings.*') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900' }}">
+        <a href="{{ route('user.bookings.index') }}" class="flex flex-col items-center py-1 px-2 text-[10px] font-bold {{ request()->routeIs('user.bookings.*') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900' }}">
             <i class="fa-solid fa-calendar-check text-base mb-0.5"></i>
             <span>Pesanan</span>
         </a>
-        <a href="{{ route('user.chat.index') }}" class="relative flex flex-col items-center py-1.5 px-3 text-[10px] font-bold {{ request()->routeIs('user.chat.*') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900' }}">
+        <a href="{{ route('user.chat.index') }}" class="relative flex flex-col items-center py-1 px-2 text-[10px] font-bold {{ request()->routeIs('user.chat.*') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900' }}">
             <i class="fa-solid fa-comments text-base mb-0.5"></i>
             <span>Chat</span>
             @if($unreadChatCount > 0)
-                <span class="absolute top-1 right-3 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white animate-ping"></span>
+                <span class="absolute top-1 right-2 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white animate-ping"></span>
             @endif
         </a>
-        <a href="{{ route('profile.edit') }}" class="flex flex-col items-center py-1.5 px-3 text-[10px] font-bold {{ request()->routeIs('profile.*') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900' }}">
+        <a href="{{ route('user.tickets.index') }}" class="flex flex-col items-center py-1 px-2 text-[10px] font-bold {{ request()->routeIs('user.tickets.*') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900' }}">
+            <i class="fa-solid fa-headset text-base mb-0.5"></i>
+            <span>Bantuan</span>
+        </a>
+        <a href="{{ route('profile.edit') }}" class="flex flex-col items-center py-1 px-2 text-[10px] font-bold {{ request()->routeIs('profile.*') ? 'text-blue-600' : 'text-slate-500 hover:text-slate-900' }}">
             <i class="fa-solid fa-user text-base mb-0.5"></i>
             <span>Profil</span>
         </a>
@@ -238,25 +242,37 @@
             },
 
             init() {
-                // Flash session toasts from Laravel
-                @if (session('success'))
-                    this.showToast('Berhasil', '{{ session('success') }}', 'success');
-                @endif
-                @if (session('error'))
-                    this.showToast('Pemberitahuan', '{{ session('error') }}', 'error');
-                @endif
-                @if ($errors->any())
-                    this.showToast('Gagal Memproses', '{{ $errors->first() }}', 'error');
-                @endif
-
                 // Listen for custom toast events from client-side scripts
                 window.addEventListener('custom-toast', (e) => {
-                    this.showToast(e.detail.title || 'Info', e.detail.message || '', e.detail.type || 'info');
+                    const type = e.detail.type || 'info';
+                    const title = e.detail.title || 'Info';
+                    const message = e.detail.message || '';
+                    if (window.toastSuccess && type === 'success') {
+                        window.toastSuccess(message, title);
+                    } else if (window.toastError && type === 'error') {
+                        window.toastError(message, title);
+                    } else if (window.toastWarning && type === 'warning') {
+                        window.toastWarning(message, title);
+                    } else if (window.toastInfo) {
+                        window.toastInfo(message, title);
+                    } else {
+                        this.showToast(title, message, type);
+                    }
                 });
 
                 // Listen for custom confirm events from client-side scripts
                 window.addEventListener('custom-confirm', (e) => {
-                    this.openConfirm(e.detail.title, e.detail.message, e.detail.confirmText, e.detail.onConfirm);
+                    if (window.confirmAction) {
+                        window.confirmAction(
+                            e.detail.message || '',
+                            e.detail.onConfirm,
+                            e.detail.title || 'Konfirmasi Tindakan',
+                            e.detail.confirmText || 'Ya, Lanjutkan',
+                            'warning'
+                        );
+                    } else {
+                        this.openConfirm(e.detail.title, e.detail.message, e.detail.confirmText, e.detail.onConfirm);
+                    }
                 });
             },
 

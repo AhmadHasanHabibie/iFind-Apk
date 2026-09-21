@@ -258,10 +258,12 @@ class BookingController extends Controller
 
         $request->validate([
             'remaining_amount_received' => ['nullable', 'numeric', 'min:0'],
+            'amount_received' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $amountReceived = $request->filled('remaining_amount_received')
-            ? (float) $request->input('remaining_amount_received')
+        $inputAmount = $request->input('remaining_amount_received') ?? $request->input('amount_received');
+        $amountReceived = ($inputAmount !== null && $inputAmount !== '')
+            ? (float) $inputAmount
             : (float) $booking->remaining_amount;
 
         $booking->update([

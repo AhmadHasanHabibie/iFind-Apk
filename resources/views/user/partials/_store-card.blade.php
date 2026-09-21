@@ -11,6 +11,7 @@
         @if($photoUrl)
             <img src="{{ $photoUrl }}"
                  alt="{{ $store->name }}"
+                 loading="lazy"
                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
             <div style="display: none;" class="w-full h-full bg-gradient-to-tr from-blue-600/10 to-indigo-600/20 items-center justify-center text-slate-400">

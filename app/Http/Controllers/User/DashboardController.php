@@ -17,7 +17,7 @@ class DashboardController extends Controller
         $facilities = Facility::orderBy('name')->get();
 
         $query = Store::visible()
-            ->with(['category', 'photos', 'facilities'])
+            ->with(['category', 'photos', 'facilities', 'slots'])
             ->withCount('reviews');
 
         // Pencarian Keyword

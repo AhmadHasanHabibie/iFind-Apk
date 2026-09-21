@@ -363,7 +363,10 @@ function scannerApp() {
                     "Accept": "application/json",
                     "X-CSRF-TOKEN": "{{ csrf_token() }}"
                 },
-                body: JSON.stringify({ amount_received: amount })
+                body: JSON.stringify({
+                    remaining_amount_received: amount,
+                    amount_received: amount
+                })
             })
             .then(res => res.json().then(data => ({ status: res.status, data: data })))
             .then(result => {
