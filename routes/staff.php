@@ -6,10 +6,7 @@ use App\Http\Controllers\Staff\DashboardController;
 use App\Http\Controllers\Staff\ScanController;
 use App\Http\Controllers\Staff\SlotController;
 use App\Http\Controllers\Staff\StoreProfileController;
-<<<<<<< HEAD
 use App\Http\Controllers\Staff\TicketController;
-=======
->>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->group(function () {
@@ -24,7 +21,6 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
     Route::delete('/store/photos/{photo}', [StoreProfileController::class, 'deletePhoto'])->name('store.photos.delete');
     Route::patch('/store/photos/{photo}/primary', [StoreProfileController::class, 'setPrimaryPhoto'])->name('store.photos.primary');
 
-<<<<<<< HEAD
     // Tiket Bantuan Staf ke Admin (Bisa diakses tanpa harus punya toko)
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/create', [TicketController::class, 'create'])->name('tickets.create');
@@ -32,8 +28,6 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
     Route::post('/tickets/{ticket}/reply', [TicketController::class, 'reply'])->name('tickets.reply');
 
-=======
->>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
     Route::middleware('store.exists')->group(function () {
         Route::resource('slots', SlotController::class)->except(['show']);
         Route::post('/slots/bulk-generate', [SlotController::class, 'bulkGenerate'])->name('slots.bulk-generate');
@@ -42,6 +36,9 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
         Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
         Route::patch('/bookings/{booking}/confirm', [BookingController::class, 'confirm'])->name('bookings.confirm');
         Route::patch('/bookings/{booking}/reject', [BookingController::class, 'reject'])->name('bookings.reject');
+        Route::patch('/bookings/{booking}/confirm-remaining', [BookingController::class, 'confirmRemaining'])->name('bookings.confirm-remaining');
+        Route::patch('/bookings/{booking}/reject-remaining', [BookingController::class, 'rejectRemaining'])->name('bookings.reject-remaining');
+        Route::post('/bookings/{booking}/cash-remaining', [BookingController::class, 'cashRemaining'])->name('bookings.cash-remaining');
         Route::patch('/bookings/{booking}/complete', [BookingController::class, 'complete'])->name('bookings.complete');
         Route::patch('/bookings/{booking}/refund', [BookingController::class, 'refund'])->name('bookings.refund');
 

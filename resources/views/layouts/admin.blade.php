@@ -78,7 +78,6 @@
                     </div>
                 </a>
 
-<<<<<<< HEAD
                 <!-- Kelola Toko / Tempat -->
                 <a href="{{ route('admin.stores.index') }}"
                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.stores.*') ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
@@ -97,8 +96,6 @@
                     </div>
                 </a>
 
-=======
->>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
                 <!-- Verifikasi Staf -->
                 <a href="{{ route('admin.staff-verification.index') }}"
                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.staff-verification.*') ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
@@ -120,7 +117,6 @@
                     </div>
                 </a>
 
-<<<<<<< HEAD
                 <!-- Fasilitas -->
                 <a href="{{ route('admin.facilities.index') }}"
                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.facilities.*') ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
@@ -129,9 +125,6 @@
                         <span>Fasilitas Toko</span>
                     </div>
                 </a>
-
-=======
->>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
                 <!-- Pusat Bantuan / Tiket -->
                 <a href="{{ route('admin.tickets.index') }}"
                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.tickets.*') ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">

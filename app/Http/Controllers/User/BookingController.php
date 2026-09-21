@@ -94,7 +94,6 @@ class BookingController extends Controller
             $bookingCode = 'IFD-' . Carbon::now()->format('Ymd') . '-' . strtoupper(Str::random(5));
         } while (Booking::where('booking_code', $bookingCode)->exists());
 
-<<<<<<< HEAD
         try {
             $booking = DB::transaction(function () use ($request, $store, $seatCount, $bookingCode, $pricePerPax, $dpPercentage, $totalAmount, $amountDue, $deadline) {
                 // Kunci baris slot (pessimistic lock) agar kebal dari race condition
@@ -124,6 +123,7 @@ class BookingController extends Controller
                     'dp_percentage_snapshot' => $dpPercentage,
                     'total_amount' => $totalAmount,
                     'amount_due' => $amountDue,
+                    'remaining_payment_status' => $dpPercentage >= 100 ? 'not_required' : 'unpaid',
                     'payment_deadline' => $deadline,
                 ]);
 
@@ -136,31 +136,6 @@ class BookingController extends Controller
         } catch (\RuntimeException $e) {
             return back()->withErrors(['seat_count' => $e->getMessage()])->withInput();
         }
-=======
-        $booking = DB::transaction(function () use ($request, $store, $slot, $seatCount, $bookingCode, $pricePerPax, $dpPercentage, $totalAmount, $amountDue, $deadline) {
-            $createdBooking = Booking::create([
-                'booking_code' => $bookingCode,
-                'user_id' => $request->user()->id,
-                'store_id' => $store->id,
-                'slot_id' => $slot->id,
-                'booking_date' => $slot->date,
-                'seat_count' => $seatCount,
-                'status' => 'awaiting_payment',
-                'notes' => $request->notes,
-                'price_per_pax_snapshot' => $pricePerPax,
-                'dp_percentage_snapshot' => $dpPercentage,
-                'total_amount' => $totalAmount,
-                'amount_due' => $amountDue,
-                'payment_deadline' => $deadline,
-            ]);
-
-            // Tahan kapasitas sejak awal booking dibuat
-            $slot->booked_seats += $seatCount;
-            $slot->save(); // Trigger SlotObserver otomatis
-
-            return $createdBooking;
-        });
->>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
 
         return redirect()->route('user.bookings.payment', $booking->booking_code)
             ->with('success', 'Reservasi berhasil dibuat. Silakan selesaikan pembayaran sesuai instruksi.');
@@ -256,6 +231,36 @@ class BookingController extends Controller
             'booking' => $booking,
             'qrCodeSvg' => $qrCodeSvg,
         ]);
+    }
+
+    public function uploadRemainingProof(Request $request, Booking $booking): RedirectResponse
+    {
+        abort_if($booking->user_id !== $request->user()->id, 403, 'Akses pemesanan ditolak.');
+
+        abort_if(
+            ! in_array($booking->status, ['confirmed', 'checked_in']) || $booking->remaining_payment_status !== 'unpaid',
+            422,
+            'Pelunasan hanya dapat dilakukan untuk pesanan yang telah dikonfirmasi dan belum lunas.'
+        );
+
+        $request->validate([
+            'remaining_proof' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+        ], [
+            'remaining_proof.required' => 'File bukti transfer pelunasan wajib diunggah.',
+            'remaining_proof.image' => 'File harus berupa gambar (JPG/PNG).',
+            'remaining_proof.max' => 'Ukuran file maksimal 2MB.',
+        ]);
+
+        $path = $request->file('remaining_proof')->store("remaining_proofs/{$booking->id}", 'public');
+
+        $booking->update([
+            'remaining_proof_path' => $path,
+            'remaining_uploaded_at' => now(),
+            'remaining_payment_method' => 'qris_transfer',
+            'remaining_payment_status' => 'pending_verification',
+        ]);
+
+        return back()->with('success', 'Bukti pelunasan terkirim, menunggu verifikasi toko.');
     }
 
     public function cancel(Request $request, Booking $booking): RedirectResponse

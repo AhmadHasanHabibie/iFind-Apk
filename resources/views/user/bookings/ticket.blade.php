@@ -15,6 +15,20 @@
         </button>
     </div>
 
+    @if(session('success'))
+        <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs font-bold flex items-center space-x-2">
+            <i class="fa-solid fa-circle-exclamation text-rose-600 text-sm"></i>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+
     <!-- E-Ticket Main Card -->
     <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden print:shadow-none print:border-slate-400">
         <!-- Header Ribbon -->
@@ -120,7 +134,7 @@
 
                     @if(! $booking->is_paid_in_full)
                         <div class="flex justify-between items-center text-amber-900 pt-1.5 font-bold">
-                            <span>Sisa yang Harus Dibayar di Lokasi:</span>
+                            <span>Sisa Pembayaran:</span>
                             <span class="text-sm font-black text-amber-700">
                                 Rp {{ number_format($booking->remaining_amount, 0, ',', '.') }}
                             </span>
@@ -128,6 +142,121 @@
                     @endif
                 </div>
             </div>
+
+            <!-- Section Pelunasan Sisa Pembayaran (Hanya jika ada sisa) -->
+            @if(in_array($booking->status, ['confirmed', 'checked_in']) && $booking->remaining_payment_status !== 'not_required')
+                <div class="p-5 rounded-2xl border transition-all space-y-4 {{ $booking->remaining_payment_status === 'paid' ? 'bg-emerald-50/60 border-emerald-200' : ($booking->remaining_payment_status === 'pending_verification' ? 'bg-blue-50/60 border-blue-200' : 'bg-amber-50/60 border-amber-200') }}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full {{ $booking->remaining_payment_status === 'paid' ? 'bg-emerald-500' : ($booking->remaining_payment_status === 'pending_verification' ? 'bg-blue-500 animate-pulse' : 'bg-amber-500') }}"></span>
+                            <h4 class="text-xs font-black uppercase tracking-wider {{ $booking->remaining_payment_status === 'paid' ? 'text-emerald-900' : ($booking->remaining_payment_status === 'pending_verification' ? 'text-blue-900' : 'text-amber-900') }}">
+                                Pelunasan Sisa Pembayaran
+                            </h4>
+                        </div>
+
+                        @if($booking->remaining_payment_status === 'paid')
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-600 text-white shadow-xs">
+                                <i class="fa-solid fa-check mr-1"></i> Lunas
+                            </span>
+                        @elseif($booking->remaining_payment_status === 'pending_verification')
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-xs">
+                                Menunggu Verifikasi Pelunasan oleh Toko
+                            </span>
+                        @else
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-600 text-white shadow-xs">
+                                Belum Lunas
+                            </span>
+                        @endif
+                    </div>
+
+                    @if($booking->remaining_payment_status === 'paid')
+                        <div class="p-3 bg-white/80 rounded-xl border border-emerald-200 text-xs space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Metode Pelunasan:</span>
+                                <strong class="text-slate-800">{{ $booking->remaining_payment_method === 'cash' ? 'Tunai di Lokasi' : 'Transfer / QRIS' }}</strong>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Nominal Diterima:</span>
+                                <strong class="text-emerald-700">Rp {{ number_format($booking->remaining_amount_received ?? $booking->remaining_amount, 0, ',', '.') }}</strong>
+                            </div>
+                            @if($booking->remaining_verified_at)
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Waktu Verifikasi:</span>
+                                    <span class="text-slate-700">{{ $booking->remaining_verified_at->isoFormat('D MMMM Y, HH:mm') }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    @elseif($booking->remaining_payment_status === 'pending_verification')
+                        <div class="p-3.5 bg-white/90 rounded-xl border border-blue-200 text-xs space-y-2">
+                            <p class="text-slate-700">
+                                Bukti pelunasan Anda sebesar <strong class="text-blue-700 font-black">Rp {{ number_format($booking->remaining_amount, 0, ',', '.') }}</strong> telah diunggah pada <strong>{{ $booking->remaining_uploaded_at?->isoFormat('D MMM Y, HH:mm') }}</strong> dan sedang ditinjau oleh pihak toko.
+                            </p>
+                            @if($booking->remaining_proof_path)
+                                <a href="{{ asset('storage/' . $booking->remaining_proof_path) }}" target="_blank" class="inline-flex items-center text-[11px] font-bold text-blue-600 hover:underline">
+                                    <i class="fa-solid fa-image mr-1"></i> Lihat Bukti yang Telah Diunggah &rarr;
+                                </a>
+                            @endif
+                        </div>
+                    @else
+                        <!-- UNPAID: Tampilkan form upload dan info rekening/QRIS -->
+                        <div class="space-y-3">
+                            <div class="p-3 bg-white/90 rounded-xl border border-amber-200 text-xs flex justify-between items-center">
+                                <div>
+                                    <span class="text-slate-500 block text-[11px]">Sisa Tagihan yang Harus Dilunasi:</span>
+                                    <span class="text-base font-black text-amber-900">
+                                        Rp {{ number_format($booking->remaining_amount, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                                <span class="text-[11px] text-slate-500 text-right">
+                                    Bisa bayar online sekarang<br>atau tunai di lokasi
+                                </span>
+                            </div>
+
+                            @if($booking->remaining_rejection_reason)
+                                <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800">
+                                    <strong class="block font-bold mb-0.5">Catatan Penolakan Pelunasan Sebelumnya:</strong>
+                                    {{ $booking->remaining_rejection_reason }}
+                                </div>
+                            @endif
+
+                            <!-- Info Rekening / QRIS Toko -->
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
+                                <span class="font-bold text-slate-700 block text-[11px]">Rekening Tujuan Pelunasan:</span>
+                                @if($booking->store->bank_name && $booking->store->bank_account_number)
+                                    <div class="flex items-center justify-between text-slate-800">
+                                        <span>{{ $booking->store->bank_name }}: <strong class="font-mono font-bold">{{ $booking->store->bank_account_number }}</strong> (a.n. {{ $booking->store->bank_account_name }})</span>
+                                    </div>
+                                @endif
+                                @if($booking->store->qris_image_path)
+                                    <div class="pt-1">
+                                        <a href="{{ asset('storage/' . $booking->store->qris_image_path) }}" target="_blank" class="inline-flex items-center text-[11px] text-blue-600 hover:underline font-bold">
+                                            <i class="fa-solid fa-qrcode mr-1"></i> Buka Gambar QRIS Toko
+                                        </a>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <!-- Form Upload Bukti Pelunasan -->
+                            <form method="POST" action="{{ route('user.bookings.upload-remaining-proof', $booking) }}" enctype="multipart/form-data" class="space-y-2.5 pt-1">
+                                @csrf
+                                <label class="block text-xs font-bold text-slate-800">
+                                    Upload Bukti Transfer Pelunasan:
+                                </label>
+                                <input type="file" name="remaining_proof" accept="image/*" required
+                                       class="block w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer border border-slate-300 rounded-xl bg-white p-1 focus:outline-hidden">
+                                @error('remaining_proof')
+                                    <p class="text-xs text-rose-600 font-bold mt-1">{{ $message }}</p>
+                                @enderror
+
+                                <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center justify-center space-x-1.5">
+                                    <i class="fa-solid fa-upload text-xs"></i>
+                                    <span>Kirim Bukti Pelunasan</span>
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            @endif
 
             @if($booking->notes)
                 <div class="text-xs p-3 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 italic">

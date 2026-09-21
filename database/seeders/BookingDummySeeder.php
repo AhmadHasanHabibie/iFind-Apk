@@ -50,6 +50,19 @@ class BookingDummySeeder extends Seeder
             Storage::disk('public')->put('payment_proofs/dummy_proof_2.jpg', $content);
         }
 
+        if (! Storage::disk('public')->exists('remaining_proofs/dummy_remaining_1.jpg')) {
+            $img = imagecreatetruecolor(400, 600);
+            $bg = imagecolorallocate($img, 235, 245, 255);
+            $text = imagecolorallocate($img, 30, 41, 59);
+            imagefill($img, 0, 0, $bg);
+            imagestring($img, 5, 50, 280, 'BUKTI PELUNASAN DUMMY 1', $text);
+            ob_start();
+            imagejpeg($img);
+            $content = ob_get_clean();
+            imagedestroy($img);
+            Storage::disk('public')->put('remaining_proofs/dummy_remaining_1.jpg', $content);
+        }
+
         if (! Storage::disk('public')->exists('qris/dummy/titik-temu-qris.png')) {
             $img = imagecreatetruecolor(300, 300);
             $bg = imagecolorallocate($img, 255, 255, 255);
@@ -192,12 +205,17 @@ class BookingDummySeeder extends Seeder
                 'qr_token' => Str::random(40),
                 'checked_in_at' => now()->subHours(3),
                 'checked_in_by' => $staff?->id,
+                'remaining_payment_status' => 'paid',
+                'remaining_payment_method' => 'cash',
+                'remaining_verified_at' => now()->subHours(3),
+                'remaining_verified_by' => $staff?->id,
+                'remaining_amount_received' => max(0, $total5 - $dp5),
                 'status' => 'completed',
                 'notes' => 'Terima kasih atas pelayanannya.',
             ]
         );
 
-        // 6. confirmed (1)
+        // 6. confirmed (1) - remaining paid (allows staff complete test)
         $seat6 = 2;
         $total6 = $seat6 * $pricePerPax;
         $dp6 = (int) round(($total6 * $dpPct) / 100);
@@ -220,12 +238,17 @@ class BookingDummySeeder extends Seeder
                 'payment_verified_by' => $staff?->id,
                 'confirmed_at' => now()->subHour(),
                 'qr_token' => 'DEMO-TOKEN-CONFIRMED-106-XYZ1234567890',
+                'remaining_payment_status' => 'paid',
+                'remaining_payment_method' => 'cash',
+                'remaining_verified_at' => now()->subHour(),
+                'remaining_verified_by' => $staff?->id,
+                'remaining_amount_received' => max(0, $total6 - $dp6),
                 'status' => 'confirmed',
                 'notes' => 'Siap datang tepat waktu.',
             ]
         );
 
-        // 7. confirmed (2)
+        // 7. confirmed (2) - remaining unpaid
         $seat7 = 3;
         $total7 = $seat7 * $pricePerPax;
         $dp7 = (int) round(($total7 * $dpPct) / 100);
@@ -248,12 +271,45 @@ class BookingDummySeeder extends Seeder
                 'payment_verified_by' => $staff?->id,
                 'confirmed_at' => now()->subMinutes(30),
                 'qr_token' => 'DEMO-TOKEN-CONFIRMED-107-ABC9876543210',
+                'remaining_payment_status' => 'unpaid',
                 'status' => 'confirmed',
                 'notes' => 'Acara temu komunitas koding.',
             ]
         );
 
-        // 8. checked_in (1)
+        // 7b. confirmed (3) - remaining pending_verification
+        $seat13 = 2;
+        $total13 = $seat13 * $pricePerPax;
+        $dp13 = (int) round(($total13 * $dpPct) / 100);
+        Booking::updateOrCreate(
+            ['booking_code' => 'IF-BKG-113'],
+            [
+                'user_id' => $user->id,
+                'store_id' => $store->id,
+                'slot_id' => $slots[8]->id,
+                'booking_date' => $tomorrow,
+                'seat_count' => $seat13,
+                'price_per_pax_snapshot' => $pricePerPax,
+                'dp_percentage_snapshot' => $dpPct,
+                'total_amount' => $total13,
+                'amount_due' => $dp13,
+                'payment_deadline' => now()->subHours(1),
+                'payment_proof_path' => 'payment_proofs/dummy_proof_1.jpg',
+                'payment_uploaded_at' => now()->subHours(1),
+                'payment_verified_at' => now()->subMinutes(20),
+                'payment_verified_by' => $staff?->id,
+                'confirmed_at' => now()->subMinutes(20),
+                'qr_token' => 'DEMO-TOKEN-CONFIRMED-113-QWERTYUIOP',
+                'remaining_payment_status' => 'pending_verification',
+                'remaining_payment_method' => 'qris_transfer',
+                'remaining_proof_path' => 'remaining_proofs/dummy_remaining_1.jpg',
+                'remaining_uploaded_at' => now()->subMinutes(15),
+                'status' => 'confirmed',
+                'notes' => 'Diskusi tim persiapan startup.',
+            ]
+        );
+
+        // 8. checked_in (1) - remaining paid
         $seat8 = 2;
         $total8 = $seat8 * $pricePerPax;
         $dp8 = (int) round(($total8 * $dpPct) / 100);
@@ -278,6 +334,11 @@ class BookingDummySeeder extends Seeder
                 'qr_token' => 'DEMO-TOKEN-CHECKEDIN-108-LMN555666777',
                 'checked_in_at' => now()->subMinutes(20),
                 'checked_in_by' => $staff?->id,
+                'remaining_payment_status' => 'paid',
+                'remaining_payment_method' => 'cash',
+                'remaining_verified_at' => now()->subMinutes(15),
+                'remaining_verified_by' => $staff?->id,
+                'remaining_amount_received' => max(0, $total8 - $dp8),
                 'status' => 'checked_in',
                 'notes' => 'Sudah berada di meja 4.',
             ]

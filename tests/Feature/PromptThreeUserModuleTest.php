@@ -443,6 +443,9 @@ class PromptThreeUserModuleTest extends TestCase
         $checkInResponse->assertJson(['success' => true]);
         $this->assertEquals('checked_in', $createdBooking->fresh()->status);
 
+        // Pelunasan sisa pembayaran tunai di kasir saat check-in
+        $this->actingAs($staff)->post(route('staff.bookings.cash-remaining', $createdBooking));
+
         // Langkah 6: Staf menandai booking 'complete' setelah kunjungan selesai
         $completeResponse = $this->actingAs($staff)->patch(route('staff.bookings.complete', $createdBooking));
         $completeResponse->assertRedirect();

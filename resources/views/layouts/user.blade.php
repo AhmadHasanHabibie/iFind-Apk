@@ -131,14 +131,11 @@
                             </span>
                         @endif
                     </a>
-<<<<<<< HEAD
                     <a href="{{ route('user.tickets.index') }}"
                        class="px-3.5 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('user.tickets.*') ? 'text-blue-600 bg-blue-50/80 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80' }}">
                         <i class="fa-solid fa-headset mr-1.5 text-xs"></i>
                         Bantuan
                     </a>
-=======
->>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
                 </nav>
             </div>
 
@@ -171,12 +168,9 @@
                         <a href="{{ route('profile.edit') }}" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition">
                             <i class="fa-solid fa-user-gear mr-2 text-slate-400"></i> Pengaturan Profil
                         </a>
-<<<<<<< HEAD
                         <a href="{{ route('user.tickets.index') }}" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition">
                             <i class="fa-solid fa-headset mr-2 text-slate-400"></i> Tiket Bantuan
                         </a>
-=======
->>>>>>> a30346de2a442db245cd6dcb6351f792b19d0f3d
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="w-full flex items-center text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition">

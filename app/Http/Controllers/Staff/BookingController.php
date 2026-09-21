@@ -26,6 +26,8 @@ class BookingController extends Controller
             $query->where('status', 'pending_verification');
         } elseif ($statusTab === 'active') {
             $query->whereIn('status', ['confirmed', 'checked_in']);
+        } elseif ($statusTab === 'remaining') {
+            $query->where('remaining_payment_status', 'pending_verification');
         } else {
             // Tab riwayat
             $statusTab = 'history';
@@ -48,6 +50,7 @@ class BookingController extends Controller
         $counts = [
             'pending' => Booking::where('store_id', $store->id)->where('status', 'pending_verification')->count(),
             'active' => Booking::where('store_id', $store->id)->whereIn('status', ['confirmed', 'checked_in'])->count(),
+            'remaining' => Booking::where('store_id', $store->id)->where('remaining_payment_status', 'pending_verification')->count(),
             'history' => Booking::where('store_id', $store->id)->whereIn('status', [
                 'completed',
                 'rejected_invalid_payment',
@@ -172,12 +175,118 @@ class BookingController extends Controller
                 ->with('error', 'Booking harus check-in terlebih dahulu via scan QR sebelum dapat diselesaikan.');
         }
 
+        // Sisa pembayaran harus sudah lunas atau not_required
+        if (! in_array($booking->remaining_payment_status, ['not_required', 'paid'])) {
+            if ($request->expectsJson() || $request->ajax()) {
+                abort(422, 'Sisa pembayaran belum lunas. Selesaikan pelunasan terlebih dahulu.');
+            }
+            return redirect()->route('staff.bookings.index', ['status' => 'active'])
+                ->with('error', 'Sisa pembayaran belum lunas. Selesaikan pelunasan terlebih dahulu.');
+        }
+
         $booking->update([
             'status' => 'completed',
         ]);
 
         return redirect()->route('staff.bookings.index', ['status' => 'active'])
             ->with('success', "Kunjungan booking #{$booking->booking_code} ditandai telah selesai.");
+    }
+
+    public function confirmRemaining(Request $request, Booking $booking): RedirectResponse
+    {
+        $store = $request->user()->store;
+        abort_if($booking->store_id !== $store->id, 403, 'Akses ditolak.');
+
+        if ($booking->remaining_payment_status !== 'pending_verification') {
+            return back()->with('error', 'Hanya pelunasan yang menunggu verifikasi yang dapat diterima.');
+        }
+
+        $amountReceived = $request->filled('remaining_amount_received')
+            ? (float) $request->input('remaining_amount_received')
+            : (float) $booking->remaining_amount;
+
+        $booking->update([
+            'remaining_payment_status' => 'paid',
+            'remaining_verified_at' => now(),
+            'remaining_verified_by' => $request->user()->id,
+            'remaining_amount_received' => $amountReceived,
+        ]);
+
+        return redirect()->route('staff.bookings.index', ['status' => 'remaining'])
+            ->with('success', "Pelunasan booking #{$booking->booking_code} berhasil diterima dan diverifikasi.");
+    }
+
+    public function rejectRemaining(Request $request, Booking $booking): RedirectResponse
+    {
+        $store = $request->user()->store;
+        abort_if($booking->store_id !== $store->id, 403, 'Akses ditolak.');
+
+        if ($booking->remaining_payment_status !== 'pending_verification') {
+            return back()->with('error', 'Hanya pelunasan yang menunggu verifikasi yang dapat ditolak.');
+        }
+
+        $request->validate([
+            'remaining_rejection_reason' => ['required', 'string', 'min:3'],
+        ], [
+            'remaining_rejection_reason.required' => 'Alasan penolakan pelunasan wajib diisi.',
+            'remaining_rejection_reason.min' => 'Alasan penolakan minimal 3 karakter.',
+        ]);
+
+        $booking->update([
+            'remaining_payment_status' => 'unpaid',
+            'remaining_rejection_reason' => $request->input('remaining_rejection_reason'),
+        ]);
+
+        return redirect()->route('staff.bookings.index', ['status' => 'remaining'])
+            ->with('success', "Pelunasan booking #{$booking->booking_code} berhasil ditolak.");
+    }
+
+    public function cashRemaining(Request $request, Booking $booking): mixed
+    {
+        $store = $request->user()->store;
+        abort_if($booking->store_id !== $store->id, 403, 'Akses ditolak.');
+
+        if (! in_array($booking->remaining_payment_status, ['unpaid', 'pending_verification'])) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sisa pembayaran untuk booking ini sudah lunas atau tidak diperlukan.',
+                ], 422);
+            }
+            return back()->with('error', 'Sisa pembayaran untuk booking ini sudah lunas atau tidak diperlukan.');
+        }
+
+        $request->validate([
+            'remaining_amount_received' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $amountReceived = $request->filled('remaining_amount_received')
+            ? (float) $request->input('remaining_amount_received')
+            : (float) $booking->remaining_amount;
+
+        $booking->update([
+            'remaining_payment_status' => 'paid',
+            'remaining_payment_method' => 'cash',
+            'remaining_verified_at' => now(),
+            'remaining_verified_by' => $request->user()->id,
+            'remaining_amount_received' => $amountReceived,
+        ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Pelunasan tunai booking #{$booking->booking_code} berhasil dikonfirmasi.",
+                'data' => [
+                    'booking_code' => $booking->booking_code,
+                    'remaining_payment_status' => 'paid',
+                    'remaining_payment_method' => 'cash',
+                    'remaining_amount_received' => $amountReceived,
+                    'remaining_verified_at' => now()->isoFormat('D MMM Y, HH:mm'),
+                ],
+            ]);
+        }
+
+        return back()->with('success', "Pelunasan tunai booking #{$booking->booking_code} berhasil dikonfirmasi.");
     }
 
     public function refund(Request $request, Booking $booking): RedirectResponse

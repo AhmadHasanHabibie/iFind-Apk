@@ -58,6 +58,11 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // 6. Jumlah pelunasan menunggu verifikasi staf
+        $pendingRemainingBookingsCount = Booking::where('store_id', $store->id)
+            ->where('remaining_payment_status', 'pending_verification')
+            ->count();
+
         return view('staff.dashboard', [
             'hasStore' => true,
             'store' => $store,
@@ -67,6 +72,7 @@ class DashboardController extends Controller
             'averageRating' => $averageRating,
             'todaySlots' => $todaySlots,
             'recentPendingBookings' => $recentPendingBookings,
+            'pendingRemainingBookingsCount' => $pendingRemainingBookingsCount,
         ]);
     }
 }

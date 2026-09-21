@@ -26,6 +26,14 @@ class Booking extends Model
         'dp_percentage_snapshot',
         'total_amount',
         'amount_due',
+        'remaining_payment_status',
+        'remaining_payment_method',
+        'remaining_proof_path',
+        'remaining_uploaded_at',
+        'remaining_verified_at',
+        'remaining_verified_by',
+        'remaining_rejection_reason',
+        'remaining_amount_received',
         'payment_proof_path',
         'payment_deadline',
         'payment_uploaded_at',
@@ -48,6 +56,9 @@ class Booking extends Model
         'dp_percentage_snapshot' => 'integer',
         'total_amount' => 'decimal:2',
         'amount_due' => 'decimal:2',
+        'remaining_uploaded_at' => 'datetime',
+        'remaining_verified_at' => 'datetime',
+        'remaining_amount_received' => 'decimal:2',
         'payment_deadline' => 'datetime',
         'payment_uploaded_at' => 'datetime',
         'payment_verified_at' => 'datetime',
@@ -80,6 +91,11 @@ class Booking extends Model
         return $this->belongsTo(User::class, 'payment_verified_by');
     }
 
+    public function remainingVerifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'remaining_verified_by');
+    }
+
     public function checkedInBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'checked_in_by');
@@ -92,7 +108,7 @@ class Booking extends Model
 
     public function getRemainingAmountAttribute(): float
     {
-        return max(0, (float) $this->total_amount - (float) $this->amount_due);
+        return round($this->total_amount - $this->amount_due, 2);
     }
 
     public function getIsPaidInFullAttribute(): bool

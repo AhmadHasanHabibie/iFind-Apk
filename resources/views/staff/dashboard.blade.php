@@ -60,6 +60,23 @@
             </div>
         @endif
 
+        @if(isset($pendingRemainingBookingsCount) && $pendingRemainingBookingsCount > 0)
+            <div class="bg-indigo-50 border-l-4 border-indigo-600 p-4 rounded-xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-extrabold text-indigo-900">Perhatian: Pelunasan Menunggu Verifikasi</h4>
+                        <p class="text-xs text-indigo-700 mt-0.5">Ada {{ $pendingRemainingBookingsCount }} pelunasan menunggu verifikasi Anda.</p>
+                    </div>
+                </div>
+                <a href="{{ route('staff.bookings.index', ['status' => 'remaining']) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shrink-0 shadow-sm">
+                    Verifikasi Pelunasan &rarr;
+                </a>
+            </div>
+        @endif
+
         <!-- 4 Key Stat Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- 1. Booking Masuk Hari Ini -->

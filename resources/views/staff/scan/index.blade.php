@@ -117,27 +117,107 @@
                         <strong class="text-blue-700 font-mono font-bold" x-text="checkInData.time_session"></strong>
                     </div>
 
-                    <!-- Payment Status Highlight -->
+                    <!-- Payment Status Highlight based on remaining_payment_status -->
                     <div class="pt-1">
-                        <template x-if="checkInData.remaining_to_pay <= 0">
+                        <!-- Case 1: not_required (Store with 100% DP or no remaining payment required) -->
+                        <template x-if="checkInData.remaining_payment_status === 'not_required' || (checkInData.remaining_payment_status === null && checkInData.remaining_to_pay <= 0)">
                             <div class="p-3 bg-emerald-100/70 border border-emerald-300 rounded-xl flex items-center justify-between">
                                 <span class="font-bold text-emerald-800">Status Pembayaran:</span>
                                 <span class="px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white font-black text-xs">
-                                    LUNAS
+                                    LUNAS (100% DP)
                                 </span>
                             </div>
                         </template>
 
-                        <template x-if="checkInData.remaining_to_pay > 0">
-                            <div class="p-3 bg-amber-50 border border-amber-300 rounded-xl space-y-1">
+                        <!-- Case 2: paid (Remaining payment already settled) -->
+                        <template x-if="checkInData.remaining_payment_status === 'paid'">
+                            <div class="p-3 bg-emerald-50 border border-emerald-300 rounded-xl space-y-1">
                                 <div class="flex items-center justify-between">
-                                    <span class="font-bold text-amber-900 uppercase text-[10px]">Wajib Ditagih di Lokasi:</span>
-                                    <span class="px-2 py-0.5 rounded-md bg-amber-600 text-white font-black text-[10px]">
-                                        SISA PELUNASAN
+                                    <span class="font-bold text-emerald-800 uppercase text-[10px]">Sisa Pembayaran:</span>
+                                    <span class="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-black text-[10px]">
+                                        SUDAH LUNAS
                                     </span>
                                 </div>
-                                <div class="text-lg font-black text-amber-800" x-text="checkInData.remaining_formatted"></div>
-                                <p class="text-[10px] text-amber-700">Mohon minta pembayaran tunai / cash dari customer saat ini.</p>
+                                <div class="text-xs text-emerald-800 font-semibold flex items-center justify-between">
+                                    <span>Metode: <strong class="uppercase" x-text="checkInData.remaining_payment_method === 'cash' ? 'Tunai di Toko' : (checkInData.remaining_payment_method || 'Online')"></strong></span>
+                                    <span class="text-[11px] text-emerald-600" x-show="checkInData.remaining_verified_at" x-text="checkInData.remaining_verified_at"></span>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Case 3: pending_verification (Customer uploaded remaining proof online) -->
+                        <template x-if="checkInData.remaining_payment_status === 'pending_verification'">
+                            <div class="p-3 bg-blue-50 border border-blue-300 rounded-xl space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-blue-800 uppercase text-[10px]">Sisa Pembayaran:</span>
+                                    <span class="px-2 py-0.5 rounded-md bg-blue-600 text-white font-black text-[10px]">
+                                        MENUNGGU VERIFIKASI
+                                    </span>
+                                </div>
+                                <p class="text-xs text-blue-700 font-medium">User sudah upload bukti pelunasan secara online &mdash; Menunggu verifikasi staf.</p>
+                                <div class="pt-1">
+                                    <a :href="'{{ route('staff.bookings.index') }}?status=remaining'" target="_blank"
+                                       class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition shadow-xs">
+                                        <span>Buka Menu Verifikasi Pelunasan</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Case 4: unpaid (Remaining payment unpaid) -->
+                        <template x-if="checkInData.remaining_payment_status === 'unpaid' || (!checkInData.remaining_payment_status && checkInData.remaining_to_pay > 0)">
+                            <div class="p-3.5 bg-amber-50 border border-amber-300 rounded-xl space-y-3" x-data="{ showCashInput: false, cashAmount: checkInData.remaining_amount || checkInData.remaining_to_pay, cashProcessing: false, cashError: '' }">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-amber-900 uppercase text-[10px]">Sisa Pembayaran:</span>
+                                    <span class="px-2 py-0.5 rounded-md bg-amber-600 text-white font-black text-[10px]">
+                                        WAJIB DITAGIH DI LOKASI
+                                    </span>
+                                </div>
+                                <div>
+                                    <div class="text-xl font-black text-amber-900" x-text="formatRupiah(checkInData.remaining_amount || checkInData.remaining_to_pay)"></div>
+                                    <p class="text-[11px] text-amber-700 mt-0.5">Tagih pelunasan sisa tagihan langsung di kasir / meja reservasi.</p>
+                                </div>
+
+                                <!-- Inline Cash Confirmation Form -->
+                                <div class="pt-2 border-t border-amber-200/80">
+                                    <template x-if="!showCashInput">
+                                        <button type="button"
+                                                @click="showCashInput = true; cashAmount = checkInData.remaining_amount || checkInData.remaining_to_pay"
+                                                class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow-xs flex items-center justify-center space-x-1.5">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                            <span>Konfirmasi Sudah Dibayar Tunai</span>
+                                        </button>
+                                    </template>
+
+                                    <template x-if="showCashInput">
+                                        <div class="space-y-2">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Nominal Tunai Diterima (Rp):</label>
+                                                <input type="number"
+                                                       x-model="cashAmount"
+                                                       class="w-full text-xs font-mono font-bold rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 py-1.5 px-2.5">
+                                            </div>
+                                            <template x-if="cashError">
+                                                <p class="text-[10px] text-rose-600 font-bold" x-text="cashError"></p>
+                                            </template>
+                                            <div class="flex items-center space-x-2">
+                                                <button type="button"
+                                                        @click="confirmCashPayment(checkInData.id, cashAmount, () => { cashProcessing = true; }, () => { cashProcessing = false; }, (err) => { cashError = err; })"
+                                                        :disabled="cashProcessing"
+                                                        class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition">
+                                                    <span x-show="!cashProcessing">Simpan & Tandai Lunas</span>
+                                                    <span x-show="cashProcessing">Menyimpan...</span>
+                                                </button>
+                                                <button type="button"
+                                                        @click="showCashInput = false; cashError = ''"
+                                                        class="py-1.5 px-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition">
+                                                    Batal
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
                         </template>
                     </div>
@@ -189,6 +269,10 @@ function scannerApp() {
         resultMessage: '',
         checkInData: null,
         errorMessage: '',
+
+        formatRupiah(num) {
+            return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+        },
 
         startCamera() {
             this.errorMessage = '';
@@ -267,6 +351,39 @@ function scannerApp() {
                 this.processing = false;
                 console.error("Check-in error:", err);
                 this.errorMessage = "Gagal menghubungi server. Periksa koneksi internet Anda.";
+            });
+        },
+
+        confirmCashPayment(bookingId, amount, onStart, onEnd, onError) {
+            onStart();
+            fetch(`/staff/bookings/${bookingId}/cash-remaining`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({ amount_received: amount })
+            })
+            .then(res => res.json().then(data => ({ status: res.status, data: data })))
+            .then(result => {
+                onEnd();
+                if (result.status === 200 && result.data.success) {
+                    if (this.checkInData) {
+                        this.checkInData.remaining_payment_status = 'paid';
+                        this.checkInData.remaining_payment_method = 'cash';
+                        this.checkInData.remaining_to_pay = 0;
+                        this.checkInData.remaining_verified_at = 'Baru saja';
+                    }
+                    this.resultMessage = result.data.message || 'Sisa pembayaran tunai berhasil dikonfirmasi!';
+                } else {
+                    onError(result.data.message || 'Gagal mengonfirmasi pelunasan tunai.');
+                }
+            })
+            .catch(err => {
+                onEnd();
+                console.error("Cash payment error:", err);
+                onError("Terjadi kesalahan koneksi saat memproses pelunasan tunai.");
             });
         },
 

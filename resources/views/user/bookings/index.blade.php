@@ -108,6 +108,22 @@
                                         Dibatalkan (Waktu Habis)
                                     </span>
                                 @endif
+
+                                @if(in_array($booking->status, ['confirmed', 'checked_in']) && $booking->remaining_payment_status !== 'not_required')
+                                    @if($booking->remaining_payment_status === 'paid')
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                            <i class="fa-solid fa-check mr-1 text-emerald-600"></i> Sisa Lunas ({{ $booking->remaining_payment_method === 'cash' ? 'Tunai' : 'Transfer' }})
+                                        </span>
+                                    @elseif($booking->remaining_payment_status === 'pending_verification')
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                                            <i class="fa-solid fa-hourglass-half mr-1 text-blue-600 animate-pulse"></i> Verifikasi Pelunasan
+                                        </span>
+                                    @else
+                                        <a href="{{ route('user.bookings.ticket', $booking->booking_code) }}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition">
+                                            <i class="fa-solid fa-wallet mr-1 text-amber-600"></i> Pelunasan: Rp {{ number_format($booking->remaining_amount, 0, ',', '.') }}
+                                        </a>
+                                    @endif
+                                @endif
                             </div>
 
                             <a href="{{ route('user.stores.show', $booking->store->slug) }}" class="text-base sm:text-lg font-black text-slate-900 hover:text-blue-600 transition-colors block truncate">

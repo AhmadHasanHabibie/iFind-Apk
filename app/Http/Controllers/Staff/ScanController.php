@@ -102,6 +102,7 @@ class ScanController extends Controller
             'success' => true,
             'message' => 'Check-in berhasil! Selamat datang.',
             'data' => [
+                'id' => $booking->id,
                 'booking_code' => $booking->booking_code,
                 'customer_name' => $booking->user->name ?? 'Pelanggan',
                 'customer_phone' => $booking->user->phone ?? '-',
@@ -111,6 +112,10 @@ class ScanController extends Controller
                 'total_amount' => $booking->total_amount,
                 'amount_due' => $booking->amount_due,
                 'remaining_to_pay' => $remainingToPay,
+                'remaining_amount' => (float) $booking->remaining_amount,
+                'remaining_payment_status' => $booking->remaining_payment_status,
+                'remaining_payment_method' => $booking->remaining_payment_method,
+                'remaining_verified_at' => $booking->remaining_verified_at ? $booking->remaining_verified_at->isoFormat('D MMM Y, HH:mm') : null,
                 'payment_status' => $remainingToPay <= 0 ? 'LUNAS' : 'SISA BAYAR DI TEMPAT',
                 'remaining_formatted' => $remainingToPay <= 0 ? 'LUNAS' : 'Rp ' . number_format($remainingToPay, 0, ',', '.'),
                 'checked_in_at' => now()->isoFormat('D MMM Y, HH:mm:ss'),
