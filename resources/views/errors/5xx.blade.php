@@ -1,0 +1,15 @@
+@extends('errors.layout')
+
+@section('code', $exception ? $exception->getStatusCode() : '5xx')
+@section('title', 'Kendala Sistem Server')
+@section('message', $exception && $exception->getMessage() ? $exception->getMessage() : 'Terjadi gangguan tak terduga pada infrastruktur server saat memproses permintaan Anda.')
+
+@section('ambient_color_1', 'bg-rose-400/20')
+@section('ambient_color_2', 'bg-red-500/20')
+@section('status_dot', 'bg-rose-500')
+@section('accent_gradient', 'bg-gradient-to-r from-rose-500 via-red-500 to-slate-700')
+@section('badge_bg', 'bg-rose-50 border border-rose-200/70')
+@section('badge_glow', 'bg-rose-500/15')
+@section('icon_class', 'fa-solid fa-triangle-exclamation')
+@section('icon_color', 'text-rose-600')
+@section('code_gradient', 'bg-gradient-to-br from-rose-600 via-red-700 to-slate-900 bg-clip-text text-transparent')

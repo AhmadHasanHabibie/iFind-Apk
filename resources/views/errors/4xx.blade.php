@@ -1,0 +1,15 @@
+@extends('errors.layout')
+
+@section('code', $exception ? $exception->getStatusCode() : '4xx')
+@section('title', 'Kendala Permintaan Klien')
+@section('message', $exception && $exception->getMessage() ? $exception->getMessage() : 'Permintaan yang dikirim tidak dapat dipenuhi oleh sistem. Silakan periksa kembali tautan atau aksi yang dilakukan.')
+
+@section('ambient_color_1', 'bg-blue-400/20')
+@section('ambient_color_2', 'bg-slate-400/20')
+@section('status_dot', 'bg-blue-500')
+@section('accent_gradient', 'bg-gradient-to-r from-blue-500 via-indigo-500 to-slate-600')
+@section('badge_bg', 'bg-blue-50 border border-blue-200/70')
+@section('badge_glow', 'bg-blue-500/15')
+@section('icon_class', 'fa-solid fa-circle-exclamation')
+@section('icon_color', 'text-blue-600')
+@section('code_gradient', 'bg-gradient-to-br from-blue-600 via-slate-700 to-slate-900 bg-clip-text text-transparent')
