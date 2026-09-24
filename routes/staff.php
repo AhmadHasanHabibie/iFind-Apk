@@ -3,6 +3,7 @@
 use App\Http\Controllers\Staff\BookingController;
 use App\Http\Controllers\Staff\ChatController;
 use App\Http\Controllers\Staff\DashboardController;
+use App\Http\Controllers\Staff\MenuController;
 use App\Http\Controllers\Staff\ScanController;
 use App\Http\Controllers\Staff\SlotController;
 use App\Http\Controllers\Staff\StoreProfileController;
@@ -18,6 +19,7 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
     Route::post('/store', [StoreProfileController::class, 'store'])->name('store.store');
     Route::get('/store/edit', [StoreProfileController::class, 'edit'])->name('store.edit');
     Route::put('/store', [StoreProfileController::class, 'update'])->name('store.update');
+    Route::post('/store/parse-maps-url', [StoreProfileController::class, 'parseMapsUrl'])->name('store.parse-maps-url');
     Route::delete('/store/photos/{photo}', [StoreProfileController::class, 'deletePhoto'])->name('store.photos.delete');
     Route::patch('/store/photos/{photo}/primary', [StoreProfileController::class, 'setPrimaryPhoto'])->name('store.photos.primary');
 
@@ -29,9 +31,17 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
     Route::post('/tickets/{ticket}/reply', [TicketController::class, 'reply'])->name('tickets.reply');
 
     Route::middleware('store.exists')->group(function () {
+        // Kelola Menu Makanan & Minuman
+        Route::resource('menus', MenuController::class)->except(['show']);
+        Route::patch('/menus/{menu}/toggle', [MenuController::class, 'toggleAvailable'])->name('menus.toggle');
+
         Route::resource('slots', SlotController::class)->except(['show']);
         Route::post('/slots/bulk-generate', [SlotController::class, 'bulkGenerate'])->name('slots.bulk-generate');
         Route::patch('/slots/{slot}/close', [SlotController::class, 'close'])->name('slots.close');
+
+        // Rekap & Export Reservasi
+        Route::get('/bookings/export', [BookingController::class, 'export'])->name('bookings.export');
+        Route::get('/bookings/print-report', [BookingController::class, 'printReport'])->name('bookings.print-report');
 
         Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
         Route::patch('/bookings/{booking}/confirm', [BookingController::class, 'confirm'])->name('bookings.confirm');

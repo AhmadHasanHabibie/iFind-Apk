@@ -20,8 +20,11 @@ class StoreController extends Controller
             'category',
             'photos',
             'facilities',
+            'menus' => fn($q) => $q->where('is_available', true)->orderByDesc('is_recommended')->orderBy('name'),
             'reviews.user' => fn($q) => $q->latest(),
         ]);
+
+        $isFavorited = $store->isFavoritedBy(auth()->user());
 
         $selectedDate = $request->input('date', Carbon::today()->toDateString());
 
@@ -76,6 +79,7 @@ class StoreController extends Controller
             'isOpenNow' => $isOpenNow,
             'todaySchedule' => $todaySchedule,
             'todayDay' => $todayDay,
+            'isFavorited' => $isFavorited,
         ]);
     }
 }

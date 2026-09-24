@@ -101,6 +101,25 @@ class Store extends Model
         return $query->where('status', 'approved')->where('is_active', true);
     }
 
+    public function menus(): HasMany
+    {
+        return $this->hasMany(Menu::class);
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    public function isFavoritedBy(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $this->favorites()->where('user_id', $user->id)->exists();
+    }
+
     public function getPrimaryPhotoUrlAttribute(): string
     {
         $primary = $this->photos()->where('is_primary', true)->first() ?? $this->photos()->first();

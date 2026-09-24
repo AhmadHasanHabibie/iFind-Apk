@@ -317,4 +317,87 @@ class BookingController extends Controller
         return redirect()->route('staff.bookings.index', ['status' => 'history'])
             ->with('success', "Proses refund untuk booking #{$booking->booking_code} telah ditandai selesai.");
     }
+
+    public function export(Request $request)
+    {
+        $store = $request->user()->store;
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+
+        $bookings = Booking::where('store_id', $store->id)
+            ->whereBetween('booking_date', [$startDate, $endDate])
+            ->with(['user', 'slot'])
+            ->orderBy('booking_date', 'asc')
+            ->get();
+
+        $filename = "rekap-reservasi-{$store->slug}-{$startDate}-sd-{$endDate}.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($bookings, $store, $startDate, $endDate) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ["REKAPITULASI RESERVASI - " . strtoupper($store->name)]);
+            fputcsv($handle, ["Periode: {$startDate} s/d {$endDate}"]);
+            fputcsv($handle, []);
+            fputcsv($handle, [
+                'Kode Booking',
+                'Nama Pemesan',
+                'Email',
+                'No. HP',
+                'Tanggal Reservasi',
+                'Jam Slot',
+                'Jumlah Kursi',
+                'Total Nominal (Rp)',
+                'Nominal DP (Rp)',
+                'Status Reservasi',
+                'Status Pelunasan',
+                'Tanggal Dibuat'
+            ]);
+
+            foreach ($bookings as $b) {
+                fputcsv($handle, [
+                    $b->booking_code,
+                    $b->user->name ?? '-',
+                    $b->user->email ?? '-',
+                    $b->user->phone ?? '-',
+                    $b->booking_date,
+                    $b->slot ? substr($b->slot->start_time, 0, 5) . ' - ' . substr($b->slot->end_time, 0, 5) : '-',
+                    $b->seat_count,
+                    $b->total_amount,
+                    $b->amount_due,
+                    $b->status,
+                    $b->remaining_payment_status,
+                    $b->created_at->format('Y-m-d H:i')
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function printReport(Request $request): View
+    {
+        $store = $request->user()->store;
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+
+        $bookings = Booking::where('store_id', $store->id)
+            ->whereBetween('booking_date', [$startDate, $endDate])
+            ->with(['user', 'slot'])
+            ->orderBy('booking_date', 'asc')
+            ->get();
+
+        $totalRevenue = $bookings->whereIn('status', ['confirmed', 'checked_in', 'completed'])->sum('total_amount');
+        $totalPax = $bookings->whereIn('status', ['confirmed', 'checked_in', 'completed'])->sum('seat_count');
+
+        return view('staff.bookings.report-print', compact('store', 'bookings', 'startDate', 'endDate', 'totalRevenue', 'totalPax'));
+    }
 }

@@ -116,6 +116,11 @@
                         <i class="fa-solid fa-compass mr-1.5 text-xs"></i>
                         Jelajah Tempat
                     </a>
+                    <a href="{{ route('user.favorites.index') }}"
+                       class="px-3.5 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('user.favorites.*') ? 'text-rose-600 bg-rose-50/80 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80' }}">
+                        <i class="fa-solid fa-heart mr-1.5 text-xs text-rose-500"></i>
+                        Spot Favorit
+                    </a>
                     <a href="{{ route('user.bookings.index') }}"
                        class="px-3.5 py-2 rounded-xl text-sm font-semibold transition {{ request()->routeIs('user.bookings.*') ? 'text-blue-600 bg-blue-50/80 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80' }}">
                         <i class="fa-solid fa-calendar-check mr-1.5 text-xs"></i>

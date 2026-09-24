@@ -13,23 +13,35 @@
         'status' => $s->status,
         'is_bookable' => ($store->canAcceptBookings() && $s->status !== 'closed' && $s->available_seats > 0 && ! $isPast),
     ];
-})) }}, '{{ $selectedDate }}', '{{ $store->slug }}', {{ $store->canAcceptBookings() ? 'true' : 'false' }}, {{ (float) ($store->price_per_pax ?? 0) }}, {{ (int) ($store->dp_percentage ?? 100) }})">
+})) }}, '{{ $selectedDate }}', '{{ $store->slug }}', {{ $store->id }}, {{ $store->canAcceptBookings() ? 'true' : 'false' }}, {{ (float) ($store->price_per_pax ?? 0) }}, {{ (int) ($store->dp_percentage ?? 100) }}, {{ $isFavorited ? 'true' : 'false' }})">
 
     <!-- Back Navigation & Quick Actions -->
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-3">
         <a href="{{ route('user.dashboard') }}" class="inline-flex items-center space-x-2 text-xs font-bold text-slate-600 hover:text-blue-600 transition group">
             <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
             <span>Kembali ke Pencarian Spot</span>
         </a>
 
-        <!-- Chat with Store Button -->
-        <form action="{{ route('user.chat.start', $store->slug) }}" method="POST">
-            @csrf
-            <button type="submit" class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                <i class="fa-solid fa-comment-dots text-sm"></i>
-                <span>Chat dengan Toko</span>
+        <div class="flex items-center space-x-2.5">
+            <!-- Bookmark / Wishlist Button -->
+            <button type="button"
+                    @click="toggleFavorite()"
+                    :disabled="favoriting"
+                    class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl border font-bold text-xs transition-all shadow-xs hover:-translate-y-0.5 active:translate-y-0"
+                    :class="isFavorited ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'">
+                <i class="fa-heart text-sm" :class="isFavorited ? 'fa-solid text-rose-500' : 'fa-regular text-slate-400'"></i>
+                <span x-text="isFavorited ? 'Tersimpan di Favorit' : 'Simpan ke Favorit'"></span>
             </button>
-        </form>
+
+            <!-- Chat with Store Button -->
+            <form action="{{ route('user.chat.start', $store->slug) }}" method="POST">
+                @csrf
+                <button type="submit" class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0 transition-all">
+                    <i class="fa-solid fa-comment-dots text-sm"></i>
+                    <span>Chat Toko</span>
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Store Header / Photo Gallery Card -->
@@ -121,14 +133,14 @@
                         </div>
                     </div>
 
-                    <!-- Google Maps Button -->
+                    <!-- Google Maps Direction Button -->
                     @if($store->latitude && $store->longitude)
-                        <a href="https://www.google.com/maps?q={{ $store->latitude }},{{ $store->longitude }}"
+                        <a href="https://www.google.com/maps/dir/?api=1&destination={{ $store->latitude }},{{ $store->longitude }}"
                            target="_blank"
                            rel="noopener noreferrer"
                            class="px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center space-x-2 transition-all border border-slate-200 shadow-xs hover:shadow hover:-translate-y-0.5">
-                            <i class="fa-solid fa-map-location-dot text-blue-600 text-sm"></i>
-                            <span>Buka di Maps</span>
+                            <i class="fa-solid fa-diamond-turn-right text-blue-600 text-sm"></i>
+                            <span>Rute Google Maps</span>
                         </a>
                     @endif
                 </div>
@@ -197,6 +209,110 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- DIGITAL MENU & PRICING SECTION -->
+    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 md:p-10 space-y-6" x-data="{ activeMenuCat: 'all' }">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+            <div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700 mb-1.5">
+                    <i class="fa-solid fa-utensils text-xs"></i>
+                    <span>Transparansi Harga Pelajar</span>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <span>Katalog Menu & Harga</span>
+                </h2>
+                <p class="text-xs text-slate-500 mt-1">
+                    Cek pilihan makanan, kopi, minuman, dan snack hemat sebelum memesan meja.
+                </p>
+            </div>
+
+            <!-- Filter Category Tabs -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                <button type="button" @click="activeMenuCat = 'all'"
+                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0"
+                        :class="activeMenuCat === 'all' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'">
+                    Semua ({{ $store->menus->count() }})
+                </button>
+                <button type="button" @click="activeMenuCat = 'minuman'"
+                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0"
+                        :class="activeMenuCat === 'minuman' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'">
+                    ☕ Minuman
+                </button>
+                <button type="button" @click="activeMenuCat = 'makanan'"
+                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0"
+                        :class="activeMenuCat === 'makanan' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'">
+                    🍛 Makanan
+                </button>
+                <button type="button" @click="activeMenuCat = 'snack'"
+                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0"
+                        :class="activeMenuCat === 'snack' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'">
+                    🍟 Snack
+                </button>
+                <button type="button" @click="activeMenuCat = 'paket_hemat'"
+                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0"
+                        :class="activeMenuCat === 'paket_hemat' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'">
+                    🎓 Paket Hemat
+                </button>
+            </div>
+        </div>
+
+        <!-- Menu Grid -->
+        @if($store->menus->count() > 0)
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                @foreach($store->menus as $menu)
+                    <div class="bg-slate-50/70 rounded-2xl border border-slate-200/80 p-4 flex gap-4 items-start hover:bg-white hover:shadow-md hover:border-slate-300 transition-all group"
+                         x-show="activeMenuCat === 'all' || activeMenuCat === '{{ $menu->category }}'"
+                         x-transition>
+                        <!-- Menu Photo Thumbnail -->
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-200 overflow-hidden shrink-0 relative border border-slate-200">
+                            @if($menu->photo)
+                                <img src="{{ asset('storage/' . $menu->photo) }}" alt="{{ $menu->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            @else
+                                <div class="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                                    <i class="fa-solid fa-mug-hot text-xl opacity-40"></i>
+                                </div>
+                            @endif
+
+                            @if($menu->is_recommended)
+                                <div class="absolute top-1 left-1">
+                                    <span class="px-1.5 py-0.5 rounded-md bg-amber-500 text-white text-[9px] font-black shadow-xs">⭐ Top</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Menu Details -->
+                        <div class="flex-1 min-w-0 flex flex-col justify-between h-full space-y-1">
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase {{ $menu->category === 'paket_hemat' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700' }}">
+                                        {{ str_replace('_', ' ', $menu->category) }}
+                                    </span>
+                                </div>
+                                <h4 class="text-sm font-bold text-slate-900 truncate mt-1 leading-tight group-hover:text-blue-600 transition-colors">
+                                    {{ $menu->name }}
+                                </h4>
+                                @if($menu->description)
+                                    <p class="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
+                                        {{ $menu->description }}
+                                    </p>
+                                @endif
+                            </div>
+
+                            <p class="text-sm font-black text-emerald-600 pt-1">
+                                Rp {{ number_format($menu->price, 0, ',', '.') }}
+                            </p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="text-center py-10 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                <i class="fa-solid fa-clipboard-list text-3xl text-slate-300"></i>
+                <p class="text-xs font-bold text-slate-600">Daftar Menu Sedang Disiapkan</p>
+                <p class="text-[11px] text-slate-400 max-w-sm mx-auto">Pihak toko belum mengunggah daftar menu detail ke sistem. Anda dapat bertanya langsung melalui fitur Chat.</p>
+            </div>
+        @endif
     </div>
 
     @if(!$store->canAcceptBookings())
@@ -503,14 +619,17 @@
 
 @push('scripts')
 <script>
-function storeDetail(initialSlots, initialDate, storeSlug, canAcceptBookings, pricePerPax, dpPercentage) {
+function storeDetail(initialSlots, initialDate, storeSlug, storeId, canAcceptBookings, pricePerPax, dpPercentage, initialFavorited) {
     return {
         slots: initialSlots,
         currentDate: initialDate,
         storeSlug: storeSlug,
+        storeId: storeId,
         canAcceptBookings: canAcceptBookings,
         pricePerPax: pricePerPax,
         dpPercentage: dpPercentage,
+        isFavorited: initialFavorited,
+        favoriting: false,
         seatCount: 1,
         loadingSlots: false,
         modalOpen: false,
@@ -523,6 +642,29 @@ function storeDetail(initialSlots, initialDate, storeSlug, canAcceptBookings, pr
 
         formatRupiah(val) {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val || 0);
+        },
+
+        async toggleFavorite() {
+            if (this.favoriting) return;
+            this.favoriting = true;
+            try {
+                const response = await fetch(`/user/favorites/${this.storeId}/toggle`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.isFavorited = data.is_favorited;
+                }
+            } catch (err) {
+                console.error('Failed to toggle favorite:', err);
+            } finally {
+                this.favoriting = false;
+            }
         },
 
         selectDate(dateStr) {

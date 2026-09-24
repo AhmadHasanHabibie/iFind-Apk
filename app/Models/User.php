@@ -31,6 +31,8 @@ class User extends Authenticatable
         'verification_status',
         'verification_note',
         'verified_at',
+        'otp_code',
+        'otp_expires_at',
     ];
 
     /**
@@ -41,6 +43,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'otp_code',
     ];
 
     /**
@@ -50,6 +53,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'otp_expires_at' => 'datetime',
         'verified_at' => 'datetime',
         'is_active' => 'boolean',
         'password' => 'hashed',
@@ -74,6 +78,16 @@ class User extends Authenticatable
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    public function favoriteStores()
+    {
+        return $this->belongsToMany(Store::class, 'favorites')->withTimestamps();
     }
 
     // Accessors / Helpers

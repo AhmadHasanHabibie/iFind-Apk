@@ -3,6 +3,7 @@
 use App\Http\Controllers\User\BookingController;
 use App\Http\Controllers\User\ChatController;
 use App\Http\Controllers\User\DashboardController;
+use App\Http\Controllers\User\FavoriteController;
 use App\Http\Controllers\User\ReviewController;
 use App\Http\Controllers\User\StoreController;
 use App\Http\Controllers\User\TicketController;
@@ -12,6 +13,10 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/stores/{store:slug}', [StoreController::class, 'show'])->name('stores.show');
+
+    // Favorit / Wishlist Spot
+    Route::get('/favorites', [FavoriteController::class, 'index'])->name('favorites.index');
+    Route::post('/favorites/{store}/toggle', [FavoriteController::class, 'toggle'])->name('favorites.toggle');
 
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');

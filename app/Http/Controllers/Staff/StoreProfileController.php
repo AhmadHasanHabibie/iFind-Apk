@@ -7,8 +7,11 @@ use App\Models\Category;
 use App\Models\Facility;
 use App\Models\Store;
 use App\Models\StorePhoto;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -51,6 +54,7 @@ class StoreProfileController extends Controller
             'city' => ['required', 'string', 'max:100'],
             'latitude' => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
+            'maps_url' => ['nullable', 'string'],
             'phone' => ['nullable', 'string', 'max:25'],
             'facilities' => ['nullable', 'array'],
             'facilities.*' => ['exists:facilities,id'],
@@ -65,6 +69,17 @@ class StoreProfileController extends Controller
             'bank_account_holder' => ['nullable', 'string', 'max:100'],
             'qris_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
+
+        // Auto-extract coordinates if empty but maps_url is given
+        $latitude = $validated['latitude'] ?? null;
+        $longitude = $validated['longitude'] ?? null;
+        if ((empty($latitude) || empty($longitude)) && ! empty($request->maps_url)) {
+            $coords = $this->extractCoordinatesFromUrl($request->maps_url);
+            if ($coords) {
+                $latitude = $coords['lat'];
+                $longitude = $coords['lng'];
+            }
+        }
 
         // Cek validasi bank / QRIS jika ada harga
         $hasBank = ! empty($validated['bank_name']) || ! empty($validated['bank_account_number']) || ! empty($validated['bank_account_holder']);
@@ -96,8 +111,8 @@ class StoreProfileController extends Controller
             'description' => $validated['description'] ?? null,
             'address' => $validated['address'],
             'city' => $validated['city'],
-            'latitude' => $validated['latitude'] ?? null,
-            'longitude' => $validated['longitude'] ?? null,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
             'phone' => $validated['phone'] ?? null,
             'opening_hours' => $formattedHours,
             'status' => 'approved', // Auto approved for verified staff
@@ -169,6 +184,7 @@ class StoreProfileController extends Controller
             'city' => ['required', 'string', 'max:100'],
             'latitude' => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
+            'maps_url' => ['nullable', 'string'],
             'phone' => ['nullable', 'string', 'max:25'],
             'facilities' => ['nullable', 'array'],
             'facilities.*' => ['exists:facilities,id'],
@@ -183,6 +199,17 @@ class StoreProfileController extends Controller
             'bank_account_holder' => ['nullable', 'string', 'max:100'],
             'qris_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
+
+        // Auto-extract coordinates if empty but maps_url is given
+        $latitude = $validated['latitude'] ?? null;
+        $longitude = $validated['longitude'] ?? null;
+        if ((empty($latitude) || empty($longitude)) && ! empty($request->maps_url)) {
+            $coords = $this->extractCoordinatesFromUrl($request->maps_url);
+            if ($coords) {
+                $latitude = $coords['lat'];
+                $longitude = $coords['lng'];
+            }
+        }
 
         // Cek jika toko punya slot aktif dan harga kosong
         $hasActiveSlots = $store->slots()->where('status', 'available')->whereDate('date', '>=', today())->exists();
@@ -224,8 +251,8 @@ class StoreProfileController extends Controller
             'description' => $validated['description'] ?? null,
             'address' => $validated['address'],
             'city' => $validated['city'],
-            'latitude' => $validated['latitude'] ?? null,
-            'longitude' => $validated['longitude'] ?? null,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
             'phone' => $validated['phone'] ?? null,
             'opening_hours' => $formattedHours,
             'price_per_pax' => $validated['price_per_pax'] ?? null,
@@ -335,5 +362,100 @@ class StoreProfileController extends Controller
                 }
             }
         }
+    }
+
+    /**
+     * AJAX endpoint to parse Google Maps URL and return coordinates
+     */
+    public function parseMapsUrl(Request $request): JsonResponse
+    {
+        $request->validate(['url' => 'required|string']);
+        $url = trim($request->url);
+
+        $coords = $this->extractCoordinatesFromUrl($url);
+
+        if ($coords) {
+            return response()->json([
+                'success' => true,
+                'latitude' => $coords['lat'],
+                'longitude' => $coords['lng'],
+                'message' => 'Koordinat berhasil diekstrak dari Link Google Maps!',
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Tidak dapat menemukan titik koordinat dari link tersebut. Pastikan link Google Maps valid (contoh: https://maps.app.goo.gl/... atau https://google.com/maps/place/...).',
+        ], 422);
+    }
+
+    /**
+     * Helper to extract coordinates from berbagai format Link Google Maps
+     */
+    private function extractCoordinatesFromUrl(string $url): ?array
+    {
+        // 1. Format koordinat langsung (contoh: "-6.2088, 106.8456")
+        if (preg_match('/^\s*(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/', $url, $matches)) {
+            return [
+                'lat' => (float) $matches[1],
+                'lng' => (float) $matches[2],
+            ];
+        }
+
+        $targetUrl = $url;
+
+        // 2. Jika merupakan shortlink (maps.app.goo.gl / goo.gl), ikuti redirect untuk mengambil URL lengkap
+        if (str_contains($url, 'goo.gl') || str_contains($url, 'maps.app.goo.gl')) {
+            try {
+                $response = Http::timeout(8)
+                    ->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'])
+                    ->get($url);
+
+                $targetUrl = (string) $response->effectiveUri();
+
+                // Cek isi HTML jika link redirect dienkripsi / via javascript
+                $body = $response->body();
+                if (preg_match('/\/maps\/place\/[^@]*@(-?\d+\.\d+),(-?\d+\.\d+)/', $body, $bMatch)) {
+                    return ['lat' => (float) $bMatch[1], 'lng' => (float) $bMatch[2]];
+                }
+                if (preg_match('/itemprop="latitude" content="(-?\d+\.\d+)"/', $body, $latMatch) &&
+                    preg_match('/itemprop="longitude" content="(-?\d+\.\d+)"/', $body, $lngMatch)) {
+                    return ['lat' => (float) $latMatch[1], 'lng' => (float) $lngMatch[1]];
+                }
+                if (preg_match('/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/', $body, $arrMatch)) {
+                    return ['lat' => (float) $arrMatch[1], 'lng' => (float) $arrMatch[2]];
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Maps URL parse exception: ' . $e->getMessage());
+            }
+        }
+
+        // 3. Regex Patterns pada target URL
+        // Pattern A: @lat,lng
+        if (preg_match('/@(-?\d+\.\d+),(-?\d+\.\d+)/', $targetUrl, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        // Pattern B: ?q=lat,lng atau &q=lat,lng
+        if (preg_match('/[?&]q=(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/', $targetUrl, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        // Pattern C: !3dlat!4dlng (Google Maps Place data payload)
+        if (preg_match('/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/', $targetUrl, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        // Pattern D: ?ll=lat,lng
+        if (preg_match('/[?&]ll=(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/', $targetUrl, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        // Pattern E: query=lat,lng
+        if (preg_match('/query=(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/', $targetUrl, $m)) {
+            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        }
+
+        return null;
     }
 }
