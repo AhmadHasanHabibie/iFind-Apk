@@ -72,7 +72,7 @@
         @if(isset($loop) && $loop->first && isset($store->distance_km) && $store->distance_km !== null)
             <span class="absolute bottom-3.5 right-3.5 px-2.5 py-1 rounded-xl bg-blue-600/95 backdrop-blur-md text-white font-extrabold text-[10px] shadow-sm flex items-center space-x-1.5 border border-blue-400/40">
                 <i class="fa-solid fa-location-crosshairs text-[10px]"></i>
-                <span>#1 Terdekat</span>
+                <span>#1 Paling Dekat</span>
             </span>
         @endif
     </div>

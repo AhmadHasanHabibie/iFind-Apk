@@ -26,7 +26,17 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'password',
         ]);
 
+        $response->assertRedirect(route('otp.verify.show'));
+
+        $user = \App\Models\User::where('email', 'test@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertNotNull($user->otp_code);
+
+        $verifyResponse = $this->withSession(['verify_user_id' => $user->id])->post(route('otp.verify.submit'), [
+            'otp' => $user->otp_code,
+        ]);
+
         $this->assertAuthenticated();
-        $response->assertRedirect(route('user.dashboard'));
+        $verifyResponse->assertRedirect(route('user.dashboard'));
     }
 }

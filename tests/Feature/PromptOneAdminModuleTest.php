@@ -46,13 +46,19 @@ class PromptOneAdminModuleTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $this->assertAuthenticated();
-        $this->assertDatabaseHas('users', [
-            'email' => 'budibaru@example.com',
-            'role' => 'user',
-            'is_active' => true,
+        $response->assertRedirect(route('otp.verify.show'));
+
+        $user = User::where('email', 'budibaru@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('user', $user->role);
+        $this->assertTrue((bool) $user->is_active);
+
+        $verifyResponse = $this->withSession(['verify_user_id' => $user->id])->post(route('otp.verify.submit'), [
+            'otp' => $user->otp_code,
         ]);
-        $response->assertRedirect(route('user.dashboard'));
+
+        $this->assertAuthenticated();
+        $verifyResponse->assertRedirect(route('user.dashboard'));
     }
 
     public function test_register_as_staff_does_not_login_and_sets_pending()
@@ -66,15 +72,21 @@ class PromptOneAdminModuleTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $this->assertGuest();
-        $this->assertDatabaseHas('users', [
-            'email' => 'stafbaru@example.com',
-            'role' => 'staff',
-            'is_active' => false,
-            'verification_status' => 'pending',
+        $response->assertRedirect(route('otp.verify.show'));
+
+        $user = User::where('email', 'stafbaru@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('staff', $user->role);
+        $this->assertFalse((bool) $user->is_active);
+        $this->assertEquals('pending', $user->verification_status);
+
+        $verifyResponse = $this->withSession(['verify_user_id' => $user->id])->post(route('otp.verify.submit'), [
+            'otp' => $user->otp_code,
         ]);
-        $response->assertRedirect(route('login'));
-        $response->assertSessionHas('status', 'Pendaftaran berhasil. Akun Anda menunggu verifikasi Admin sebelum dapat digunakan.');
+
+        $this->assertGuest();
+        $verifyResponse->assertRedirect(route('login'));
+        $verifyResponse->assertSessionHas('status', 'Email berhasil diverifikasi! Akun Staf Toko Anda kini sedang menunggu verifikasi/persetujuan oleh Admin.');
     }
 
     public function test_pending_staff_cannot_login()
