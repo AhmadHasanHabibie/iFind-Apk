@@ -21,6 +21,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
     </style>
+    @stack('styles')
 </head>
 <body class="h-full antialiased text-slate-800" x-data="{ sidebarOpen: false }">
     <div class="min-h-screen flex">

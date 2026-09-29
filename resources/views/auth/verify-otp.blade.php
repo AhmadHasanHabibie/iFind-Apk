@@ -25,6 +25,21 @@
         </div>
     @endif
 
+    @if((app()->environment('local') || config('app.debug')) && !empty($user->otp_code))
+        <div class="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-300/80 text-amber-900 text-xs shadow-xs space-y-1">
+            <div class="flex items-center gap-1.5 font-bold text-amber-900">
+                <i class="fa-solid fa-laptop-code text-amber-600 text-sm"></i>
+                <span>Mode Local / Developer Helper:</span>
+            </div>
+            <p class="text-amber-800 text-xs">
+                Kode OTP Akun Anda: <strong class="font-mono text-sm bg-amber-200/90 text-amber-950 px-2.5 py-0.5 rounded-lg font-black tracking-widest">{{ $user->otp_code }}</strong>
+            </p>
+            <p class="text-[10px] text-amber-700/80">
+                (Bantuan ini aktif di mode local jika SMTP email belum dikonfigurasi).
+            </p>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('otp.verify.submit') }}" class="space-y-6" id="otp-form">
         @csrf
 

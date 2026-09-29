@@ -390,72 +390,235 @@ class StoreProfileController extends Controller
     }
 
     /**
-     * Helper to extract coordinates from berbagai format Link Google Maps
+     * Helper to extract coordinates from various Google Maps link formats
      */
     private function extractCoordinatesFromUrl(string $url): ?array
     {
-        // 1. Format koordinat langsung (contoh: "-6.2088, 106.8456")
-        if (preg_match('/^\s*(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/', $url, $matches)) {
-            return [
-                'lat' => (float) $matches[1],
-                'lng' => (float) $matches[2],
-            ];
+        $url = trim($url);
+
+        // Jika user menempelkan kode iframe embed (contoh: <iframe src="...">)
+        if (preg_match('/<iframe\s+[^>]*src=["\']([^"\']+)["\']/i', $url, $iframeMatch)) {
+            $url = html_entity_decode($iframeMatch[1]);
         }
 
-        $targetUrl = $url;
+        $decodedUrl = urldecode($url);
 
-        // 2. Jika merupakan shortlink (maps.app.goo.gl / goo.gl), ikuti redirect untuk mengambil URL lengkap
-        if (str_contains($url, 'goo.gl') || str_contains($url, 'maps.app.goo.gl')) {
-            try {
-                $response = Http::timeout(8)
-                    ->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'])
-                    ->get($url);
-
-                $targetUrl = (string) $response->effectiveUri();
-
-                // Cek isi HTML jika link redirect dienkripsi / via javascript
-                $body = $response->body();
-                if (preg_match('/\/maps\/place\/[^@]*@(-?\d+\.\d+),(-?\d+\.\d+)/', $body, $bMatch)) {
-                    return ['lat' => (float) $bMatch[1], 'lng' => (float) $bMatch[2]];
-                }
-                if (preg_match('/itemprop="latitude" content="(-?\d+\.\d+)"/', $body, $latMatch) &&
-                    preg_match('/itemprop="longitude" content="(-?\d+\.\d+)"/', $body, $lngMatch)) {
-                    return ['lat' => (float) $latMatch[1], 'lng' => (float) $lngMatch[1]];
-                }
-                if (preg_match('/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/', $body, $arrMatch)) {
-                    return ['lat' => (float) $arrMatch[1], 'lng' => (float) $arrMatch[2]];
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Maps URL parse exception: ' . $e->getMessage());
+        // 1. Format DMS (contoh: 6°10'31.4"S 106°49'37.8"E)
+        if (preg_match('/(\d+[\s°\xc2\xb0]+\d+[\s\'\xca\xbc]+[\d\.]+[\s"”\xc2\x94]*\s*[NSns])[\s,%2C\+]+(\d+[\s°\xc2\xb0]+\d+[\s\'\xca\xbc]+[\d\.]+[\s"”\xc2\x94]*\s*[EWew])/u', $decodedUrl, $dmsMatches)) {
+            $lat = $this->parseDmsCoordinate($dmsMatches[1]);
+            $lng = $this->parseDmsCoordinate($dmsMatches[2]);
+            if ($lat !== null && $lng !== null && $this->isValidCoordinate($lat, $lng)) {
+                return ['lat' => round($lat, 7), 'lng' => round($lng, 7)];
             }
         }
 
-        // 3. Regex Patterns pada target URL
-        // Pattern A: @lat,lng
-        if (preg_match('/@(-?\d+\.\d+),(-?\d+\.\d+)/', $targetUrl, $m)) {
-            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        // 2. Format koordinat langsung desimal (contoh: "-6.2088, 106.8456")
+        if (preg_match('/^\s*(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$/', $url, $matches)) {
+            $lat = (float) $matches[1];
+            $lng = (float) $matches[2];
+            if ($this->isValidCoordinate($lat, $lng)) {
+                return ['lat' => $lat, 'lng' => $lng];
+            }
         }
 
-        // Pattern B: ?q=lat,lng atau &q=lat,lng
-        if (preg_match('/[?&]q=(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/', $targetUrl, $m)) {
-            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        // Cek langsung dari URL yang diberikan jika sudah mengandung parameter pin spesifik
+        $directCoords = $this->extractCoordinatesFromTextPayloads([$url, $decodedUrl]);
+        if ($directCoords && (str_contains($url, '!3d') || str_contains($url, '!2d') || str_contains($url, '/place/') || str_contains($url, 'query=') || str_contains($url, '?q='))) {
+            return $directCoords;
         }
 
-        // Pattern C: !3dlat!4dlng (Google Maps Place data payload)
-        if (preg_match('/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/', $targetUrl, $m)) {
-            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        $targetUrl = $url;
+        $responseBody = '';
+        $redirectHistory = [];
+
+        // 3. Jika merupakan shortlink atau redirect URL (maps.app.goo.gl / goo.gl / page.link / bit.ly), ikuti redirect
+        if (str_contains($url, 'goo.gl') || str_contains($url, 'maps.app.goo.gl') || str_contains($url, 'page.link') || str_contains($url, 'bit.ly') || !str_contains($url, 'google.com/maps')) {
+            try {
+                $response = Http::withoutVerifying()
+                    ->withHeaders([
+                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language' => 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+                    ])
+                    ->withOptions([
+                        'allow_redirects' => [
+                            'max' => 10,
+                            'strict' => true,
+                            'referer' => true,
+                            'track_redirects' => true,
+                        ],
+                    ])
+                    ->timeout(10)
+                    ->get($url);
+
+                $targetUrl = (string) $response->effectiveUri();
+                $responseBody = $response->body();
+
+                $history = $response->header('X-Guzzle-Redirect-History');
+                if ($history) {
+                    $redirectHistory = is_array($history) ? $history : explode(',', (string) $history);
+                }
+
+                // Cek jika dialihkan ke halaman persetujuan/consent Google
+                if (str_contains($targetUrl, 'consent.google.com') && preg_match('/[?&]continue=([^&]+)/', $targetUrl, $contMatch)) {
+                    $targetUrl = urldecode($contMatch[1]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Maps URL parse exception: ' . $e->getMessage(), ['url' => $url]);
+            }
         }
 
-        // Pattern D: ?ll=lat,lng
-        if (preg_match('/[?&]ll=(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/', $targetUrl, $m)) {
-            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        $textsToAnalyze = array_merge(
+            [$targetUrl, urldecode($targetUrl), $responseBody, $url, $decodedUrl],
+            $redirectHistory
+        );
+
+        $coords = $this->extractCoordinatesFromTextPayloads($textsToAnalyze);
+        if ($coords) {
+            return $coords;
         }
 
-        // Pattern E: query=lat,lng
-        if (preg_match('/query=(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)/', $targetUrl, $m)) {
-            return ['lat' => (float) $m[1], 'lng' => (float) $m[2]];
+        return $directCoords;
+    }
+
+    /**
+     * Parse text payloads with priority: Pin Marker > Embed Coordinates > Path > Query Params > Meta Tags > Fallback Viewport Center
+     */
+    private function extractCoordinatesFromTextPayloads(array $texts): ?array
+    {
+        $texts = array_filter(array_map('trim', $texts));
+
+        // Prioritas 1: Marker Pin Tempat Google Maps !3d<lat>!4d<lng> (Akurasi Paling Tinggi)
+        foreach ($texts as $txt) {
+            if (preg_match('/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/', $txt, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+                if ($this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => $lat, 'lng' => $lng];
+                }
+            }
         }
 
+        // Prioritas 2: Embed pb parameter !2d<lng>!3d<lat> (Format pb embed: 2d adalah longitude, 3d adalah latitude)
+        foreach ($texts as $txt) {
+            if (preg_match('/!2d(-?\d+\.\d+)!3d(-?\d+\.\d+)/', $txt, $m)) {
+                $lng = (float) $m[1];
+                $lat = (float) $m[2];
+                if ($this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => $lat, 'lng' => $lng];
+                }
+            }
+        }
+
+        // Prioritas 3: Koordinat langsung di path URL /place/lat,lng atau /search/lat,lng
+        foreach ($texts as $txt) {
+            if (preg_match('/\/(?:place|search)\/(-?\d{1,2}\.\d+)[,\s%2C\+]+(-?\d{1,3}\.\d+)/i', $txt, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+                if ($this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => $lat, 'lng' => $lng];
+                }
+            }
+        }
+
+        // Prioritas 4: Query parameters (q=, query=, destination=, daddr=, ll=, markers=)
+        foreach ($texts as $txt) {
+            if (preg_match('/[?&](?:q|query|destination|daddr|ll|point|markers)=(-?\d{1,2}\.\d+)[,\s%2C\+]+(-?\d{1,3}\.\d+)/i', $txt, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+                if ($this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => $lat, 'lng' => $lng];
+                }
+            }
+        }
+
+        // Prioritas 5: URL static map / gambar peta (markers / center)
+        foreach ($texts as $txt) {
+            if (preg_match('/markers=(?:color:[^\|%]+\|)?(-?\d{1,2}\.\d+)[,%2C]+(-?\d{1,3}\.\d+)/i', $txt, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+                if ($this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => $lat, 'lng' => $lng];
+                }
+            }
+            if (preg_match('/center=(-?\d{1,2}\.\d+)[,%2C]+(-?\d{1,3}\.\d+)/i', $txt, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+                if ($this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => $lat, 'lng' => $lng];
+                }
+            }
+        }
+
+        // Prioritas 6: HTML metadata itemprop & JS initial state
+        foreach ($texts as $txt) {
+            if (preg_match('/itemprop="latitude"\s+content="(-?\d+\.\d+)"/i', $txt, $latM) &&
+                preg_match('/itemprop="longitude"\s+content="(-?\d+\.\d+)"/i', $txt, $lngM)) {
+                $lat = (float) $latM[1];
+                $lng = (float) $lngM[1];
+                if ($this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => $lat, 'lng' => $lng];
+                }
+            }
+
+            if (preg_match('/\[null,null,(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)\]/', $txt, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+                if ($this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => $lat, 'lng' => $lng];
+                }
+            }
+        }
+
+        // Prioritas 7: Format DMS dalam teks URL / metadata
+        foreach ($texts as $txt) {
+            if (preg_match('/(\d+[\s°\xc2\xb0]+\d+[\s\'\xca\xbc]+[\d\.]+[\s"”\xc2\x94]*\s*[NSns])[\s,%2C\+]+(\d+[\s°\xc2\xb0]+\d+[\s\'\xca\xbc]+[\d\.]+[\s"”\xc2\x94]*\s*[EWew])/u', $txt, $dmsMatches)) {
+                $lat = $this->parseDmsCoordinate($dmsMatches[1]);
+                $lng = $this->parseDmsCoordinate($dmsMatches[2]);
+                if ($lat !== null && $lng !== null && $this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => round($lat, 7), 'lng' => round($lng, 7)];
+                }
+            }
+        }
+
+        // Prioritas 8: Fallback hanya jika tidak ada pin spesifik: Viewport Camera Center @lat,lng
+        foreach ($texts as $txt) {
+            if (preg_match('/@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/', $txt, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+                if ($this->isValidCoordinate($lat, $lng)) {
+                    return ['lat' => $lat, 'lng' => $lng];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Helper to validate coordinate range
+     */
+    private function isValidCoordinate(float $lat, float $lng): bool
+    {
+        return $lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180 && ($lat != 0.0 || $lng != 0.0);
+    }
+
+    /**
+     * Helper to parse Degrees Minutes Seconds (DMS) string to decimal
+     */
+    private function parseDmsCoordinate(string $dms): ?float
+    {
+        if (preg_match('/(\d+)[\s°\xc2\xb0]+(\d+)[\s\'\xca\xbc]+([\d\.]+)[\s"”\xc2\x94]*\s*([NSEWnsew])/u', $dms, $m)) {
+            $degrees = (float) $m[1];
+            $minutes = (float) $m[2];
+            $seconds = (float) $m[3];
+            $direction = strtoupper($m[4]);
+            $decimal = $degrees + ($minutes / 60) + ($seconds / 3600);
+            if ($direction === 'S' || $direction === 'W') {
+                $decimal *= -1;
+            }
+            return $decimal;
+        }
         return null;
     }
 }

@@ -152,7 +152,7 @@
                             </div>
 
                             <!-- Mode Selector Pills -->
-                            <div class="inline-flex bg-slate-200/80 p-1 rounded-xl text-xs font-bold shrink-0" x-data="{ mode: 'link' }" id="location-mode-wrapper">
+                            <div class="inline-flex bg-slate-200/80 p-1 rounded-xl text-xs font-bold shrink-0" id="location-mode-wrapper">
                                 <button type="button"
                                         onclick="switchLocationMode('link')"
                                         id="tab-mode-link"
@@ -208,7 +208,7 @@
                                        name="latitude"
                                        value="{{ old('latitude', $store->latitude) }}"
                                        placeholder="-6.2000000"
-                                       oninput="updateMapsPreview()"
+                                       oninput="onManualCoordinateChange()"
                                        class="w-full text-xs font-mono rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500">
                             </div>
                             <div>
@@ -219,9 +219,23 @@
                                        name="longitude"
                                        value="{{ old('longitude', $store->longitude) }}"
                                        placeholder="106.8166660"
-                                       oninput="updateMapsPreview()"
+                                       oninput="onManualCoordinateChange()"
                                        class="w-full text-xs font-mono rounded-xl border-slate-300 focus:border-blue-500 focus:ring-blue-500">
                             </div>
+                        </div>
+
+                        <!-- 3. INTERACTIVE MAP PICKER & LIVE PREVIEW -->
+                        <div class="space-y-2 pt-1">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-bold text-slate-700 flex items-center gap-1">
+                                    <i class="fa-solid fa-map-location-dot text-blue-600"></i>
+                                    Peta Interaktif Lokasi Toko
+                                </span>
+                                <span class="text-[11px] text-slate-500 italic">
+                                    Klik pada peta atau geser pin merah untuk koreksi posisi
+                                </span>
+                            </div>
+                            <div id="map-picker" class="w-full rounded-xl border border-slate-300 shadow-inner overflow-hidden" style="height: 300px; min-height: 300px; width: 100%; position: relative; z-index: 1;"></div>
                         </div>
 
                         <!-- STATUS PREVIEW KOORDINAT TERPASANG -->
@@ -317,8 +331,152 @@
 </div>
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .leaflet-container {
+        font-family: inherit;
+        z-index: 1 !important;
+    }
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    let map = null;
+    let mapMarker = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initStoreMap();
+    });
+
+    function initStoreMap() {
+        const latInput = document.getElementById('latitude');
+        const lngInput = document.getElementById('longitude');
+        let initialLat = parseFloat(latInput ? latInput.value : null);
+        let initialLng = parseFloat(lngInput ? lngInput.value : null);
+
+        const hasValidCoords = !isNaN(initialLat) && !isNaN(initialLng) && initialLat !== 0 && initialLng !== 0;
+        const defaultCenter = hasValidCoords ? [initialLat, initialLng] : [-6.200000, 106.816666]; // Default Jakarta
+        const defaultZoom = hasValidCoords ? 16 : 13;
+
+        try {
+            if (typeof L === 'undefined') {
+                console.error('Leaflet JS belum termuat.');
+                return;
+            }
+
+            map = L.map('map-picker', {
+                center: defaultCenter,
+                zoom: defaultZoom,
+                zoomControl: true,
+                scrollWheelZoom: 'center'
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            if (hasValidCoords) {
+                setMapMarker(initialLat, initialLng, false);
+            }
+
+            // Click map to reposition marker
+            map.on('click', function(e) {
+                const { lat, lng } = e.latlng;
+                updateCoordinatesFromMap(lat, lng);
+            });
+
+            // Trigger map resize fix
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 300);
+        } catch (err) {
+            console.error('Error initializing map:', err);
+        }
+    }
+
+    function setMapMarker(lat, lng, fly = true) {
+        if (!map) return;
+
+        lat = parseFloat(lat);
+        lng = parseFloat(lng);
+
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        if (mapMarker) {
+            mapMarker.setLatLng([lat, lng]);
+        } else {
+            mapMarker = L.marker([lat, lng], {
+                draggable: true,
+                autoPan: true
+            }).addTo(map);
+
+            mapMarker.on('dragend', function(e) {
+                const pos = e.target.getLatLng();
+                updateCoordinatesFromMap(pos.lat, pos.lng);
+            });
+        }
+
+        mapMarker.bindPopup('<strong>📍 Titik Lokasi Toko</strong><br><span class="text-xs text-slate-500">Geser pin untuk penyesuaian presisi</span>').openPopup();
+
+        if (fly) {
+            map.flyTo([lat, lng], 17, { duration: 1 });
+        }
+    }
+
+    function updateCoordinatesFromMap(lat, lng) {
+        const cleanLat = parseFloat(lat).toFixed(7);
+        const cleanLng = parseFloat(lng).toFixed(7);
+
+        document.getElementById('latitude').value = cleanLat;
+        document.getElementById('longitude').value = cleanLng;
+
+        setMapMarker(cleanLat, cleanLng, false);
+        updateStatusLabels(cleanLat, cleanLng);
+    }
+
+    function onManualCoordinateChange() {
+        const lat = parseFloat(document.getElementById('latitude').value);
+        const lng = parseFloat(document.getElementById('longitude').value);
+
+        if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            setMapMarker(lat, lng, true);
+            updateStatusLabels(lat, lng);
+        } else {
+            updateStatusLabels(null, null);
+        }
+    }
+
+    function updateStatusLabels(lat, lng) {
+        const link = document.getElementById('preview-maps-link');
+        const statusContainer = document.getElementById('status-coords-container');
+
+        if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
+            link.href = 'https://www.google.com/maps?q=' + encodeURIComponent(lat) + ',' + encodeURIComponent(lng);
+            link.classList.remove('hidden');
+            link.classList.add('inline-flex');
+
+            if (statusContainer) {
+                statusContainer.innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-slate-700">Koordinat terpasang: <strong class="font-mono text-emerald-700">${lat}, ${lng}</strong></span>
+                `;
+            }
+        } else {
+            link.classList.add('hidden');
+            link.classList.remove('inline-flex');
+            if (statusContainer) {
+                statusContainer.innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span class="text-slate-500">Belum ada titik koordinat yang terpasang.</span>
+                `;
+            }
+        }
+    }
+
     function switchLocationMode(mode) {
         const linkTab = document.getElementById('tab-mode-link');
         const manualTab = document.getElementById('tab-mode-manual');
@@ -336,6 +494,38 @@
             manualContainer.classList.remove('hidden');
             linkContainer.classList.add('hidden');
         }
+
+        setTimeout(() => {
+            if (map) map.invalidateSize();
+        }, 150);
+    }
+
+    // Client-side quick regex parser for Google Maps URL
+    function parseCoordinatesClientSide(rawUrl) {
+        if (!rawUrl) return null;
+        let url = decodeURIComponent(rawUrl.trim());
+
+        // Pattern 1: !3dlat!4dlng (Highest accuracy pin)
+        let m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+        if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+        // Pattern 2: !2dlng!3dlat (Embed pb)
+        m = url.match(/!2d(-?\d+\.\d+)!3d(-?\d+\.\d+)/);
+        if (m) return { lat: parseFloat(m[2]), lng: parseFloat(m[1]) };
+
+        // Pattern 3: /place/lat,lng or /search/lat,lng
+        m = url.match(/\/(?:place|search)\/(-?\d{1,2}\.\d+)[,\s+]+(-?\d{1,3}\.\d+)/i);
+        if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+        // Pattern 4: query params ?q=lat,lng or query=lat,lng or destination=lat,lng
+        m = url.match(/[?&](?:q|query|destination|daddr|ll|markers)=(-?\d{1,2}\.\d+)[,\s+]+(-?\d{1,3}\.\d+)/i);
+        if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+        // Pattern 5: raw coordinates
+        m = url.match(/^\s*(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$/);
+        if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+        return null;
     }
 
     async function extractFromMapsLink() {
@@ -347,6 +537,15 @@
             alert('Silakan tempel link Google Maps terlebih dahulu.');
             urlInput.focus();
             return;
+        }
+
+        // Coba ekstrak instan di sisi klien jika format link langsung lengkap
+        const clientParsed = parseCoordinatesClientSide(url);
+        if (clientParsed && clientParsed.lat && clientParsed.lng) {
+            document.getElementById('latitude').value = clientParsed.lat;
+            document.getElementById('longitude').value = clientParsed.lng;
+            setMapMarker(clientParsed.lat, clientParsed.lng, true);
+            updateStatusLabels(clientParsed.lat, clientParsed.lng);
         }
 
         const originalBtnHtml = btn.innerHTML;
@@ -370,59 +569,29 @@
             if (response.ok && data.success) {
                 document.getElementById('latitude').value = data.latitude;
                 document.getElementById('longitude').value = data.longitude;
-                updateMapsPreview();
 
-                const labelCoords = document.getElementById('label-coords');
-                const statusContainer = document.getElementById('status-coords-container');
-                statusContainer.innerHTML = `
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span class="text-slate-700">Koordinat terpasang: <strong class="font-mono text-emerald-700">${data.latitude}, ${data.longitude}</strong></span>
-                `;
+                setMapMarker(data.latitude, data.longitude, true);
+                updateStatusLabels(data.latitude, data.longitude);
 
                 btn.innerHTML = '<span class="text-emerald-300 font-bold">✓ Berhasil</span>';
                 setTimeout(() => {
                     btn.disabled = false;
                     btn.innerHTML = originalBtnHtml;
-                }, 2000);
+                }, 2500);
             } else {
-                alert(data.message || 'Gagal mengekstrak koordinat dari link tersebut.');
+                if (!clientParsed) {
+                    alert(data.message || 'Gagal mengekstrak koordinat dari link tersebut.');
+                }
                 btn.disabled = false;
                 btn.innerHTML = originalBtnHtml;
             }
         } catch (e) {
             console.error('Error parsing maps URL:', e);
-            alert('Terjadi kesalahan saat menghubungi server untuk membaca link.');
+            if (!clientParsed) {
+                alert('Terjadi kesalahan saat menghubungi server untuk membaca link.');
+            }
             btn.disabled = false;
             btn.innerHTML = originalBtnHtml;
-        }
-    }
-
-    function updateMapsPreview() {
-        const lat = document.getElementById('latitude').value.trim();
-        const lng = document.getElementById('longitude').value.trim();
-        const link = document.getElementById('preview-maps-link');
-        const statusContainer = document.getElementById('status-coords-container');
-        
-        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-            link.href = 'https://www.google.com/maps?q=' + encodeURIComponent(lat) + ',' + encodeURIComponent(lng);
-            link.classList.remove('hidden');
-            link.classList.add('inline-flex');
-
-            if (statusContainer) {
-                statusContainer.innerHTML = `
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span class="text-slate-700">Koordinat terpasang: <strong class="font-mono text-emerald-700">${lat}, ${lng}</strong></span>
-                `;
-            }
-        } else {
-            link.classList.add('hidden');
-            link.classList.remove('inline-flex');
-            if (statusContainer) {
-                statusContainer.innerHTML = `
-                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                    <span class="text-slate-500">Belum ada titik koordinat yang terpasang.</span>
-                `;
-            }
         }
     }
 
@@ -437,10 +606,13 @@
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                document.getElementById('latitude').value = position.coords.latitude.toFixed(7);
-                document.getElementById('longitude').value = position.coords.longitude.toFixed(7);
+                const lat = position.coords.latitude.toFixed(7);
+                const lng = position.coords.longitude.toFixed(7);
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lng;
                 btn.innerHTML = '<span class="text-emerald-600 font-bold">✓ Lokasi GPS Terpasang</span>';
-                updateMapsPreview();
+                setMapMarker(lat, lng, true);
+                updateStatusLabels(lat, lng);
             },
             (error) => {
                 alert('Gagal mengambil lokasi GPS: ' + error.message);

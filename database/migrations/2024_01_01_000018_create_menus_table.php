@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->boolean('is_available')->default(true);
             $table->boolean('is_recommended')->default(false);
             $table->timestamps();
+            
 
             $table->index(['store_id', 'category']);
         });
