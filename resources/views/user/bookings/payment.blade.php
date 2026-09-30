@@ -87,8 +87,16 @@
                     <span class="font-bold text-slate-800">{{ $booking->seat_count }} Orang</span>
                 </div>
                 <div class="flex justify-between pt-2">
-                    <span class="text-slate-600">Total Tarif:</span>
-                    <strong class="text-slate-900">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</strong>
+                    <span class="text-slate-600">Subtotal Meja / Kursi:</span>
+                    <span class="font-bold text-slate-800">Rp {{ number_format($booking->subtotal, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between pt-2">
+                    <span class="text-slate-600">Biaya Layanan Platform (5%):</span>
+                    <span class="font-bold text-teal-700">Rp {{ number_format($booking->service_fee, 0, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between pt-2 border-t border-slate-200">
+                    <span class="text-slate-800 font-bold">Total Pembayaran:</span>
+                    <strong class="text-slate-950 font-black text-sm">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</strong>
                 </div>
                 <div class="flex justify-between items-center pt-3 text-sm">
                     <div>

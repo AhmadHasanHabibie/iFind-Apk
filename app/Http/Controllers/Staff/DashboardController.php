@@ -63,6 +63,12 @@ class DashboardController extends Controller
             ->where('remaining_payment_status', 'pending_verification')
             ->count();
 
+        // 7. Ringkasan finansial pendapatan toko & komisi website
+        $confirmedStoreBookings = Booking::where('store_id', $store->id)
+            ->whereIn('status', ['confirmed', 'checked_in', 'completed']);
+        $totalStoreNetEarnings = (float) $confirmedStoreBookings->sum('subtotal');
+        $totalStorePlatformFee = (float) $confirmedStoreBookings->sum('service_fee');
+
         return view('staff.dashboard', [
             'hasStore' => true,
             'store' => $store,
@@ -73,6 +79,8 @@ class DashboardController extends Controller
             'todaySlots' => $todaySlots,
             'recentPendingBookings' => $recentPendingBookings,
             'pendingRemainingBookingsCount' => $pendingRemainingBookingsCount,
+            'totalStoreNetEarnings' => $totalStoreNetEarnings,
+            'totalStorePlatformFee' => $totalStorePlatformFee,
         ]);
     }
 }

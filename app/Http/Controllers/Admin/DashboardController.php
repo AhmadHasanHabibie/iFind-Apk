@@ -37,11 +37,25 @@ class DashboardController extends Controller
         $categoryNames = $categories->pluck('name')->toArray();
         $categoryStoreCounts = $categories->pluck('stores_count')->toArray();
 
+        // Biaya Layanan / Komisi Platform Website (5%)
+        $confirmedBookingsQuery = Booking::whereIn('status', ['confirmed', 'checked_in', 'completed']);
+        $totalCommission = (float) $confirmedBookingsQuery->sum('service_fee');
+        $thisMonthCommission = (float) (clone $confirmedBookingsQuery)
+            ->whereMonth('booking_date', Carbon::now()->month)
+            ->whereYear('booking_date', Carbon::now()->year)
+            ->sum('service_fee');
+        $todayCommission = (float) (clone $confirmedBookingsQuery)
+            ->whereDate('booking_date', Carbon::today())
+            ->sum('service_fee');
+
         return view('admin.dashboard', compact(
             'totalUsers',
             'totalStaff',
             'totalActiveStores',
             'totalBookings',
+            'totalCommission',
+            'thisMonthCommission',
+            'todayCommission',
             'openTicketsCount',
             'pendingStaffCount',
             'bookingDays',

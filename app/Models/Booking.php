@@ -24,6 +24,9 @@ class Booking extends Model
         'confirmed_at',
         'price_per_pax_snapshot',
         'dp_percentage_snapshot',
+        'subtotal',
+        'service_fee_percentage',
+        'service_fee',
         'total_amount',
         'amount_due',
         'remaining_payment_status',
@@ -54,6 +57,9 @@ class Booking extends Model
         'confirmed_at' => 'datetime',
         'price_per_pax_snapshot' => 'decimal:2',
         'dp_percentage_snapshot' => 'integer',
+        'subtotal' => 'decimal:2',
+        'service_fee_percentage' => 'integer',
+        'service_fee' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'amount_due' => 'decimal:2',
         'remaining_uploaded_at' => 'datetime',
@@ -109,6 +115,30 @@ class Booking extends Model
     public function getRemainingAmountAttribute(): float
     {
         return round($this->total_amount - $this->amount_due, 2);
+    }
+
+    public function getSubtotalAttribute(): float
+    {
+        if (isset($this->attributes['subtotal']) && (float) $this->attributes['subtotal'] > 0) {
+            return (float) $this->attributes['subtotal'];
+        }
+        if ((float) $this->price_per_pax_snapshot > 0 && (int) $this->seat_count > 0) {
+            return round((float) $this->price_per_pax_snapshot * (int) $this->seat_count, 2);
+        }
+        return (float) ($this->attributes['total_amount'] ?? 0);
+    }
+
+    public function getServiceFeeAttribute(): float
+    {
+        if (isset($this->attributes['service_fee']) && (float) $this->attributes['service_fee'] > 0) {
+            return (float) $this->attributes['service_fee'];
+        }
+        return round($this->subtotal * 0.05, 2);
+    }
+
+    public function getStoreEarningsAttribute(): float
+    {
+        return round($this->subtotal ?: ($this->total_amount - $this->service_fee), 2);
     }
 
     public function getIsPaidInFullAttribute(): bool

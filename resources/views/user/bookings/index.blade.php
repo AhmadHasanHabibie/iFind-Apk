@@ -143,9 +143,10 @@
                                     <i class="fa-solid fa-chair text-slate-400"></i>
                                     <strong class="text-slate-800 font-bold">{{ $booking->seat_count }} Kursi</strong>
                                 </span>
-                                <span class="flex items-center space-x-1.5 text-blue-700 font-bold">
+                                <div class="flex flex-wrap items-center gap-1.5 text-blue-700 font-bold">
                                     <span>Total: Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</span>
-                                </span>
+                                    <span class="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">Termasuk Layanan 5%: Rp {{ number_format($booking->service_fee, 0, ',', '.') }}</span>
+                                </div>
                             </div>
 
                             @if($booking->notes)

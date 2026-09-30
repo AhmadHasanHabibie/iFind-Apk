@@ -199,7 +199,8 @@
                                         <div>
                                             <span class="text-slate-400 block text-[10px] uppercase font-bold">Sisa Tagihan Pelunasan:</span>
                                             <strong class="text-purple-700 text-sm font-extrabold">Rp {{ number_format($booking->remaining_amount, 0, ',', '.') }}</strong>
-                                            <span class="text-[10px] text-slate-400 block">Total: Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</span>
+                                            <span class="text-[10px] text-slate-500 block">Total Bayar: Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</span>
+                                            <span class="text-[10px] text-emerald-700 font-semibold block">Bagian Toko: Rp {{ number_format($booking->subtotal, 0, ',', '.') }} <span class="text-slate-400 font-normal">(Komisi 5%: Rp {{ number_format($booking->service_fee, 0, ',', '.') }})</span></span>
                                         </div>
 
                                         @if($booking->remaining_proof_path)
@@ -218,7 +219,8 @@
                                         <div>
                                             <span class="text-slate-400 block text-[10px] uppercase font-bold">Wajib Transfer (DP):</span>
                                             <strong class="text-blue-700 text-sm font-extrabold">Rp {{ number_format($booking->amount_due, 0, ',', '.') }}</strong>
-                                            <span class="text-[10px] text-slate-400 block">Total: Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</span>
+                                            <span class="text-[10px] text-slate-500 block">Total Bayar: Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</span>
+                                            <span class="text-[10px] text-emerald-700 font-semibold block">Bagian Toko: Rp {{ number_format($booking->subtotal, 0, ',', '.') }} <span class="text-slate-400 font-normal">(Komisi 5%: Rp {{ number_format($booking->service_fee, 0, ',', '.') }})</span></span>
                                         </div>
 
                                         @if($booking->payment_proof_path)

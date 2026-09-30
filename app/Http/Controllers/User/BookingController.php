@@ -79,12 +79,15 @@ class BookingController extends Controller
             ])->withInput();
         }
 
-        // Hitung nominal harga & DP
+        // Hitung nominal harga, biaya layanan 5%, & DP
         $pricePerPax = (float) $store->price_per_pax;
         $dpPercentage = (int) ($store->dp_percentage ?? 100);
         $seatCount = (int) $request->seat_count;
 
-        $totalAmount = round($pricePerPax * $seatCount, 2);
+        $subtotal = round($pricePerPax * $seatCount, 2);
+        $serviceFeePercentage = 5;
+        $serviceFee = round($subtotal * ($serviceFeePercentage / 100), 2);
+        $totalAmount = round($subtotal + $serviceFee, 2);
         $amountDue = round($totalAmount * $dpPercentage / 100, 2);
         $timeoutMinutes = (int) ($store->payment_timeout_minutes ?? 60);
         $deadline = now()->addMinutes($timeoutMinutes);
@@ -95,7 +98,7 @@ class BookingController extends Controller
         } while (Booking::where('booking_code', $bookingCode)->exists());
 
         try {
-            $booking = DB::transaction(function () use ($request, $store, $seatCount, $bookingCode, $pricePerPax, $dpPercentage, $totalAmount, $amountDue, $deadline) {
+            $booking = DB::transaction(function () use ($request, $store, $seatCount, $bookingCode, $pricePerPax, $dpPercentage, $subtotal, $serviceFeePercentage, $serviceFee, $totalAmount, $amountDue, $deadline) {
                 // Kunci baris slot (pessimistic lock) agar kebal dari race condition
                 $lockedSlot = Slot::where('id', $request->slot_id)
                     ->where('store_id', $store->id)
@@ -121,6 +124,9 @@ class BookingController extends Controller
                     'notes' => $request->notes,
                     'price_per_pax_snapshot' => $pricePerPax,
                     'dp_percentage_snapshot' => $dpPercentage,
+                    'subtotal' => $subtotal,
+                    'service_fee_percentage' => $serviceFeePercentage,
+                    'service_fee' => $serviceFee,
                     'total_amount' => $totalAmount,
                     'amount_due' => $amountDue,
                     'remaining_payment_status' => $dpPercentage >= 100 ? 'not_required' : 'unpaid',

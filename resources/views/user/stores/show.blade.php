@@ -499,23 +499,33 @@
                     </div>
 
                     <!-- Price breakdown -->
-                    <div class="pt-2 border-t border-blue-100/80 space-y-1">
+                    <div class="pt-2 border-t border-blue-100/80 space-y-1.5">
                         <div class="flex justify-between items-center text-slate-700">
                             <span>Tarif per Pax:</span>
                             <span class="font-bold text-slate-900" x-text="formatRupiah(pricePerPax)"></span>
                         </div>
                         <div class="flex justify-between items-center text-slate-700">
-                            <span>Total Tagihan (<span x-text="seatCount"></span> kursi):</span>
+                            <span>Subtotal (<span x-text="seatCount"></span> kursi):</span>
                             <span class="font-bold text-slate-900" x-text="formatRupiah(seatCount * pricePerPax)"></span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-700">
+                            <span class="flex items-center gap-1">
+                                <span>Biaya Layanan Platform (5%):</span>
+                            </span>
+                            <span class="font-bold text-teal-700" x-text="formatRupiah(Math.round(seatCount * pricePerPax * 0.05))"></span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-900 pt-1 border-t border-blue-100/80 font-bold">
+                            <span>Total Pembayaran:</span>
+                            <span class="font-black text-slate-950 text-sm" x-text="formatRupiah((seatCount * pricePerPax) + Math.round(seatCount * pricePerPax * 0.05))"></span>
                         </div>
                         <div class="flex justify-between items-center text-blue-800 font-bold">
                             <span>Wajib Transfer (DP <span x-text="dpPercentage + '%'"></span>):</span>
-                            <span class="font-black text-blue-700" x-text="formatRupiah(Math.round(seatCount * pricePerPax * dpPercentage / 100))"></span>
+                            <span class="font-black text-blue-700" x-text="formatRupiah(Math.round(((seatCount * pricePerPax) + Math.round(seatCount * pricePerPax * 0.05)) * dpPercentage / 100))"></span>
                         </div>
                         <template x-if="dpPercentage < 100">
                             <div class="flex justify-between items-center text-emerald-700 text-[11px]">
                                 <span>Sisa Dibayar di Tempat:</span>
-                                <strong x-text="formatRupiah(Math.max(0, (seatCount * pricePerPax) - Math.round(seatCount * pricePerPax * dpPercentage / 100)))"></strong>
+                                <strong x-text="formatRupiah(Math.max(0, ((seatCount * pricePerPax) + Math.round(seatCount * pricePerPax * 0.05)) - Math.round(((seatCount * pricePerPax) + Math.round(seatCount * pricePerPax * 0.05)) * dpPercentage / 100)))"></strong>
                             </div>
                         </template>
                     </div>

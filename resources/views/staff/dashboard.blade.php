@@ -131,6 +131,37 @@
             </div>
         </div>
 
+        <!-- Financial Summary Cards (Net Revenue & Platform Commission) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-5 rounded-2xl border border-emerald-200/80 shadow-xs flex items-center justify-between">
+                <div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <p class="text-xs font-bold uppercase tracking-wider text-emerald-800">Pendapatan Bersih Toko</p>
+                    </div>
+                    <h3 class="text-2xl font-black text-emerald-950 mt-1.5">Rp {{ number_format($totalStoreNetEarnings, 0, ',', '.') }}</h3>
+                    <p class="text-xs text-emerald-700 mt-0.5">Hak toko (95%) dari transaksi terkonfirmasi & selesai</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm shadow-emerald-500/20">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent p-5 rounded-2xl border border-blue-200/80 shadow-xs flex items-center justify-between">
+                <div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        <p class="text-xs font-bold uppercase tracking-wider text-blue-800">Biaya Layanan Platform (5%)</p>
+                    </div>
+                    <h3 class="text-2xl font-black text-blue-950 mt-1.5">Rp {{ number_format($totalStorePlatformFee, 0, ',', '.') }}</h3>
+                    <p class="text-xs text-blue-700 mt-0.5">Komisi sistem platform website iFind</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shadow-blue-600/20">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"></path></svg>
+                </div>
+            </div>
+        </div>
+
         <!-- 2 Column Section: Status Meja Hari Ini & Booking Masuk Terbaru -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Tabel Status Meja/Slot Hari Ini -->

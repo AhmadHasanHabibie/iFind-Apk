@@ -124,8 +124,16 @@
 
                 <div class="divide-y divide-slate-200/60 pt-1 space-y-1.5">
                     <div class="flex justify-between text-slate-600 pt-1">
-                        <span>Total Biaya Reservasi:</span>
-                        <strong class="text-slate-800">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</strong>
+                        <span>Subtotal Meja / Kursi:</span>
+                        <strong class="text-slate-800">Rp {{ number_format($booking->subtotal, 0, ',', '.') }}</strong>
+                    </div>
+                    <div class="flex justify-between text-slate-600 pt-1">
+                        <span>Biaya Layanan Platform (5%):</span>
+                        <strong class="text-teal-700">Rp {{ number_format($booking->service_fee, 0, ',', '.') }}</strong>
+                    </div>
+                    <div class="flex justify-between text-slate-800 pt-1 font-bold">
+                        <span>Total Pembayaran:</span>
+                        <strong class="text-slate-950 font-black">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</strong>
                     </div>
                     <div class="flex justify-between text-slate-600 pt-1">
                         <span>Sudah Ditransfer:</span>

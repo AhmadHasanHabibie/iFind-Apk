@@ -353,7 +353,9 @@ class BookingController extends Controller
                 'Tanggal Reservasi',
                 'Jam Slot',
                 'Jumlah Kursi',
-                'Total Nominal (Rp)',
+                'Subtotal Toko (Rp)',
+                'Komisi Platform 5% (Rp)',
+                'Total Bayar Pelanggan (Rp)',
                 'Nominal DP (Rp)',
                 'Status Reservasi',
                 'Status Pelunasan',
@@ -369,6 +371,8 @@ class BookingController extends Controller
                     $b->booking_date,
                     $b->slot ? substr($b->slot->start_time, 0, 5) . ' - ' . substr($b->slot->end_time, 0, 5) : '-',
                     $b->seat_count,
+                    $b->subtotal,
+                    $b->service_fee,
                     $b->total_amount,
                     $b->amount_due,
                     $b->status,
@@ -395,9 +399,12 @@ class BookingController extends Controller
             ->orderBy('booking_date', 'asc')
             ->get();
 
-        $totalRevenue = $bookings->whereIn('status', ['confirmed', 'checked_in', 'completed'])->sum('total_amount');
-        $totalPax = $bookings->whereIn('status', ['confirmed', 'checked_in', 'completed'])->sum('seat_count');
+        $confirmedBookings = $bookings->whereIn('status', ['confirmed', 'checked_in', 'completed']);
+        $totalRevenue = $confirmedBookings->sum('total_amount');
+        $totalServiceFee = $confirmedBookings->sum('service_fee');
+        $totalNetStore = $confirmedBookings->sum('subtotal');
+        $totalPax = $confirmedBookings->sum('seat_count');
 
-        return view('staff.bookings.report-print', compact('store', 'bookings', 'startDate', 'endDate', 'totalRevenue', 'totalPax'));
+        return view('staff.bookings.report-print', compact('store', 'bookings', 'startDate', 'endDate', 'totalRevenue', 'totalServiceFee', 'totalNetStore', 'totalPax'));
     }
 }

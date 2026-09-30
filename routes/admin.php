@@ -44,4 +44,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::post('/chat/{conversation}/send', [\App\Http\Controllers\Admin\ChatController::class, 'send'])->name('chat.send');
     Route::get('/chat/{conversation}/poll', [\App\Http\Controllers\Admin\ChatController::class, 'poll'])->name('chat.poll');
     Route::post('/chat/start/{staff}', [\App\Http\Controllers\Admin\ChatController::class, 'start'])->name('chat.start');
+
+    // Biaya Layanan & Komisi Platform Website (5%)
+    Route::get('/commissions', [\App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('commissions.index');
+    Route::get('/commissions/export', [\App\Http\Controllers\Admin\CommissionController::class, 'export'])->name('commissions.export');
 });

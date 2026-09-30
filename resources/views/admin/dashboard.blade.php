@@ -68,6 +68,46 @@
         </div>
     </div>
 
+    <!-- Card Komisi Website iFind (Platform Service Fee 5%) -->
+    <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 rounded-3xl p-6 text-white border border-teal-800/40 shadow-sm relative overflow-hidden">
+        <div class="absolute right-0 top-0 translate-x-4 -translate-y-4 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                        <i class="fa-solid fa-coins mr-1.5"></i> Komisi Platform Website (5%)
+                    </span>
+                    <span class="text-xs text-slate-400">Biaya Layanan yang Diterima Pembuat / Pengelola Website</span>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-3">
+                    <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                        Rp {{ number_format($totalCommission, 0, ',', '.') }}
+                    </h2>
+                    <span class="text-xs font-semibold text-teal-300 bg-teal-900/60 px-2.5 py-0.5 rounded-lg border border-teal-700/50">
+                        Transaksi Berhasil & Selesai
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-4 text-xs text-slate-300 pt-1">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-teal-400"></span>
+                        Bulan Ini: <strong class="text-white font-bold">Rp {{ number_format($thisMonthCommission, 0, ',', '.') }}</strong>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                        Hari Ini: <strong class="text-white font-bold">Rp {{ number_format($todayCommission, 0, ',', '.') }}</strong>
+                    </span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.commissions.index') }}"
+                   class="inline-flex items-center gap-2 px-5 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs rounded-2xl shadow-lg shadow-teal-500/25 transition">
+                    <span>Lihat Rincian Biaya Layanan</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- 4 Key Stat Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total Users -->
