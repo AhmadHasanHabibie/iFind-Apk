@@ -133,14 +133,9 @@ class OtpVerificationController extends Controller
             \Illuminate\Support\Facades\Log::error('Failed sending resend OTP mail: ' . $e->getMessage(), [
                 'user_id' => $user->id,
                 'email' => $user->email,
-                'otp' => $otp,
             ]);
         }
 
-        $msg = $mailSent
-            ? 'Kode OTP baru telah dikirim ke Gmail Anda. Silakan periksa inbox / spam.'
-            : 'Kode OTP baru telah digenerate untuk akun Anda.';
-
-        return back()->with('success', $msg);
+        return back()->with('success', 'Kode OTP baru telah dikirim ke Gmail Anda. Silakan periksa inbox / spam.');
     }
 }

@@ -68,18 +68,13 @@ class RegisteredUserController extends Controller
             Log::error('Failed sending OTP email: ' . $e->getMessage(), [
                 'user_id' => $user->id,
                 'email' => $user->email,
-                'otp' => $otp,
             ]);
         }
 
         // Simpan id user di sesi verifikasi
         session(['verify_user_id' => $user->id]);
 
-        $message = $mailSent
-            ? "Kode OTP verifikasi telah dikirim ke {$user->email}. Silakan cek kotak masuk Gmail Anda."
-            : "Kode OTP verifikasi telah dibuat untuk {$user->email}.";
-
         return redirect()->route('otp.verify.show')
-            ->with('success', $message);
+            ->with('success', "Kode OTP verifikasi telah dikirim ke {$user->email}. Silakan periksa kotak masuk atau folder spam Gmail Anda.");
     }
 }
