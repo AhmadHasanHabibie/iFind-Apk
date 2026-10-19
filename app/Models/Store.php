@@ -81,6 +81,11 @@ class Store extends Model
         return $this->hasMany(Booking::class);
     }
 
+    public function taxSettlements(): HasMany
+    {
+        return $this->hasMany(TaxSettlement::class);
+    }
+
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
@@ -127,5 +132,31 @@ class Store extends Model
             return asset('storage/' . $primary->photo_path);
         }
         return '';
+    }
+
+    public function getTotalTaxLiabilityAttribute(): float
+    {
+        return (float) $this->bookings()
+            ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
+            ->sum('service_fee');
+    }
+
+    public function getSettledTaxAmountAttribute(): float
+    {
+        return (float) $this->taxSettlements()
+            ->where('status', 'approved')
+            ->sum('amount');
+    }
+
+    public function getPendingTaxAmountAttribute(): float
+    {
+        return (float) $this->taxSettlements()
+            ->where('status', 'pending')
+            ->sum('amount');
+    }
+
+    public function getOutstandingTaxAmountAttribute(): float
+    {
+        return max(0.0, round($this->total_tax_liability - $this->settled_tax_amount - $this->pending_tax_amount, 2));
     }
 }

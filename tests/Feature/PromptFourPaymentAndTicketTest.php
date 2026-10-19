@@ -109,11 +109,15 @@ class PromptFourPaymentAndTicketTest extends TestCase
         $this->assertNotNull($booking);
         $response->assertRedirect(route('user.bookings.payment', $booking->booking_code));
 
-        // Verifikasi kalkulasi harga & DP
-        $expectedTotal = (float) $store->price_per_pax * $seatCount;
+        // Verifikasi kalkulasi harga, biaya layanan 5%, & DP
+        $expectedSubtotal = (float) $store->price_per_pax * $seatCount;
+        $expectedServiceFee = round($expectedSubtotal * 0.05, 2);
+        $expectedTotal = round($expectedSubtotal + $expectedServiceFee, 2);
         $expectedDue = round($expectedTotal * $store->dp_percentage / 100, 2);
 
         $this->assertEquals('awaiting_payment', $booking->status);
+        $this->assertEquals($expectedSubtotal, (float) $booking->subtotal);
+        $this->assertEquals($expectedServiceFee, (float) $booking->service_fee);
         $this->assertEquals($expectedTotal, (float) $booking->total_amount);
         $this->assertEquals($expectedDue, (float) $booking->amount_due);
         $this->assertEquals($store->dp_percentage, $booking->dp_percentage_snapshot);

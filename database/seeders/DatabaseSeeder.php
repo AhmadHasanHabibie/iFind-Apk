@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             AdditionalStaffAndStoreSeeder::class,
             AdditionalSlotSeeder::class,
             ReviewDummySeeder::class,
+            PlatformSettingSeeder::class,
         ]);
     }
 }

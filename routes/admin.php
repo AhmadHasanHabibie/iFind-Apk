@@ -48,4 +48,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     // Biaya Layanan & Komisi Platform Website (5%)
     Route::get('/commissions', [\App\Http\Controllers\Admin\CommissionController::class, 'index'])->name('commissions.index');
     Route::get('/commissions/export', [\App\Http\Controllers\Admin\CommissionController::class, 'export'])->name('commissions.export');
+
+    // Verifikasi Setoran Pajak Toko & Pengaturan QRIS Admin
+    Route::get('/tax-settlements', [\App\Http\Controllers\Admin\TaxSettlementController::class, 'index'])->name('tax-settlements.index');
+    Route::post('/tax-settlements/{settlement}/approve', [\App\Http\Controllers\Admin\TaxSettlementController::class, 'approve'])->name('tax-settlements.approve');
+    Route::post('/tax-settlements/{settlement}/reject', [\App\Http\Controllers\Admin\TaxSettlementController::class, 'reject'])->name('tax-settlements.reject');
+    Route::get('/tax-settlements/settings', [\App\Http\Controllers\Admin\TaxSettlementController::class, 'settings'])->name('tax-settlements.settings');
+    Route::post('/tax-settlements/settings', [\App\Http\Controllers\Admin\TaxSettlementController::class, 'updateSettings'])->name('tax-settlements.settings.update');
 });

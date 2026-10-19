@@ -147,17 +147,26 @@
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent p-5 rounded-2xl border border-blue-200/80 shadow-xs flex items-center justify-between">
-                <div>
-                    <div class="flex items-center space-x-1.5">
-                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                        <p class="text-xs font-bold uppercase tracking-wider text-blue-800">Biaya Layanan Platform (5%)</p>
+            <div class="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent p-5 rounded-2xl border border-blue-200/80 shadow-xs flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <p class="text-xs font-bold uppercase tracking-wider text-blue-800">Biaya Layanan Platform (5%)</p>
+                        </div>
+                        <h3 class="text-2xl font-black text-blue-950 mt-1.5">Rp {{ number_format($totalStorePlatformFee, 0, ',', '.') }}</h3>
+                        <p class="text-xs text-blue-700 mt-0.5">Komisi sistem platform website iFind</p>
                     </div>
-                    <h3 class="text-2xl font-black text-blue-950 mt-1.5">Rp {{ number_format($totalStorePlatformFee, 0, ',', '.') }}</h3>
-                    <p class="text-xs text-blue-700 mt-0.5">Komisi sistem platform website iFind</p>
+                    <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shadow-blue-600/20">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"></path></svg>
+                    </div>
                 </div>
-                <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shadow-blue-600/20">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"></path></svg>
+                <div class="mt-4 pt-3 border-t border-blue-200/60 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-600">Sisa Tagihan: <strong class="text-blue-900">Rp {{ number_format($store->outstanding_tax_amount, 0, ',', '.') }}</strong></span>
+                    <a href="{{ route('staff.tax-settlements.index') }}" class="inline-flex items-center space-x-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition">
+                        <span>Setor Pajak via QRIS</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </a>
                 </div>
             </div>
         </div>

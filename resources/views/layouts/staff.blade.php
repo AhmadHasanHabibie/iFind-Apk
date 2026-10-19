@@ -200,6 +200,23 @@
                     </div>
                 @endif
 
+                <!-- Setor Pajak (5%) -->
+                @if($hasStore)
+                    @php
+                        $outstandingTax = $store->outstanding_tax_amount;
+                    @endphp
+                    <a href="{{ route('staff.tax-settlements.index') }}"
+                       class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('staff.tax-settlements.*') ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                        <div class="flex items-center space-x-3">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            <span>Setor Pajak (5%)</span>
+                        </div>
+                        @if($outstandingTax > 0)
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-slate-950 animate-pulse">Tagihan</span>
+                        @endif
+                    </a>
+                @endif
+
                 <!-- Tiket Bantuan ke Admin -->
                 <a href="{{ route('staff.tickets.index') }}"
                    class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('staff.tickets.*') ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">

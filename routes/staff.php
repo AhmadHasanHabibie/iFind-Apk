@@ -62,5 +62,9 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
         Route::get('/chat/{conversation}/poll', [ChatController::class, 'poll'])->name('chat.poll'); // AJAX polling, return JSON
         Route::post('/chat/contact-admin', [ChatController::class, 'contactAdmin'])->name('chat.contact-admin');
         Route::match(['get', 'post'], '/chat/start-user/{user}', [ChatController::class, 'startUserChat'])->name('chat.start-user');
+
+        // Penyetoran Pajak / Biaya Layanan 5% ke Admin
+        Route::get('/tax-settlements', [\App\Http\Controllers\Staff\TaxSettlementController::class, 'index'])->name('tax-settlements.index');
+        Route::post('/tax-settlements', [\App\Http\Controllers\Staff\TaxSettlementController::class, 'store'])->name('tax-settlements.store');
     });
 });

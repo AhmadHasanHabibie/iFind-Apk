@@ -26,6 +26,29 @@
         </div>
     </div>
 
+    <!-- Sub-Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-200/80 pb-3 overflow-x-auto text-xs font-bold">
+        <a href="{{ route('admin.commissions.index') }}"
+           class="px-4 py-2 rounded-xl transition flex items-center gap-2 bg-teal-600 text-white shadow-xs">
+            <i class="fa-solid fa-list-check"></i>
+            <span>Rekap Booking & Transaksi (5%)</span>
+        </a>
+        <a href="{{ route('admin.tax-settlements.index') }}"
+           class="px-4 py-2 rounded-xl transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80">
+            <i class="fa-solid fa-file-invoice-dollar text-slate-500"></i>
+            <span>Verifikasi Setoran Toko</span>
+            @php $pCount = \App\Models\TaxSettlement::where('status', 'pending')->count(); @endphp
+            @if($pCount > 0)
+                <span class="px-2 py-0.5 text-[10px] rounded-full bg-amber-500 text-slate-900 font-extrabold animate-pulse">{{ $pCount }}</span>
+            @endif
+        </a>
+        <a href="{{ route('admin.tax-settlements.settings') }}"
+           class="px-4 py-2 rounded-xl transition flex items-center gap-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80">
+            <i class="fa-solid fa-qrcode text-slate-500"></i>
+            <span>Pengaturan QRIS & Rekening Admin</span>
+        </a>
+    </div>
+
     <!-- 4 Key Stat Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Card 1: Total Komisi Website Berhasil -->

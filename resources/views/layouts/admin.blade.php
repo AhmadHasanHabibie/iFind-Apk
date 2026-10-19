@@ -60,6 +60,7 @@
             @php
                 $pendingStaffCount = \App\Models\User::pendingStaff()->count();
                 $openTicketsCount = \App\Models\Ticket::where('status', 'open')->count();
+                $pendingTaxSettlementsCount = \App\Models\TaxSettlement::where('status', 'pending')->count();
                 $adminUnreadChatCount = \App\Models\ChatMessage::whereHas('conversation', function ($q) {
                     $q->where('type', 'staff_admin')->where(function ($sub) {
                         $sub->where('user_one_id', Auth::id())->orWhere('user_two_id', Auth::id());
@@ -80,12 +81,16 @@
 
                 <!-- Biaya Layanan & Komisi Website -->
                 <a href="{{ route('admin.commissions.index') }}"
-                   class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.commissions.*') ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                   class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.commissions.*') || request()->routeIs('admin.tax-settlements.*') ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
                     <div class="flex items-center space-x-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         <span>Biaya Layanan & Komisi</span>
                     </div>
-                    <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">5%</span>
+                    @if($pendingTaxSettlementsCount > 0)
+                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-slate-900 shadow-sm animate-pulse">{{ $pendingTaxSettlementsCount }}</span>
+                    @else
+                        <span class="px-2 py-0.5 text-[10px] font-black rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">5%</span>
+                    @endif
                 </a>
 
                 <!-- Kelola Toko / Tempat -->
